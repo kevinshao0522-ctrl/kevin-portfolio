@@ -1,0 +1,4 @@
+order_id,customer,city,amount,status
+C3001,孙十一,徐州,88.00,paid
+C3002,钱十二,无锡,410.50,paid
+C3003,冯十三,徐州,22.00,cancelled

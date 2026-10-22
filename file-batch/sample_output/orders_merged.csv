@@ -1,0 +1,12 @@
+﻿order_id,customer,city,amount,status,_source_file
+A1001,张三,徐州,128.50,paid,orders_2026-01.csv
+A1002,李四,南京,89.00,paid,orders_2026-01.csv
+A1003,王五,苏州,256.00,refunded,orders_2026-01.csv
+A1004,赵六,徐州,45.90,paid,orders_2026-01.csv
+B2001,陈七,上海,199.00,paid,orders_2026-02.csv
+B2002,周八,徐州,67.30,paid,orders_2026-02.csv
+B2003,吴九,杭州,320.00,pending,orders_2026-02.csv
+B2004,郑十,南京,15.00,paid,orders_2026-02.csv
+C3001,孙十一,徐州,88.00,paid,orders_2026-03.csv
+C3002,钱十二,无锡,410.50,paid,orders_2026-03.csv
+C3003,冯十三,徐州,22.00,cancelled,orders_2026-03.csv

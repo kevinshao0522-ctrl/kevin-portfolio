@@ -1,0 +1,5 @@
+order_id,customer,city,amount,status
+A1001,张三,徐州,128.50,paid
+A1002,李四,南京,89.00,paid
+A1003,王五,苏州,256.00,refunded
+A1004,赵六,徐州,45.90,paid

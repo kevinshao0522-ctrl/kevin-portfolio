@@ -1,0 +1,5 @@
+order_id,customer,city,amount,status
+B2001,陈七,上海,199.00,paid
+B2002,周八,徐州,67.30,paid
+B2003,吴九,杭州,320.00,pending
+B2004,郑十,南京,15.00,paid
