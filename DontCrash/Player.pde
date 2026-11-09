@@ -32,6 +32,16 @@ class Player {
   }
 
   /**
+   * Heal by the given amount, but never above 3 lives.
+   * @return true if at least 1 life was actually restored
+   */
+  boolean heal(int amount) {
+    if (lives >= 3) return false;
+    lives = min(3, lives + amount);
+    return true;
+  }
+
+  /**
    * Update ship facing from held arrow keys.
    * Even though the ship does not translate, its nose turns
    * toward the direction the player is "flying".

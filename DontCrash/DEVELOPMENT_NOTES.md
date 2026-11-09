@@ -43,11 +43,18 @@ arrow keys move aliens/background the opposite way; shooting comes later.
 - **Techniques used:** `ArrayList`, `add`/`get`/`remove`/`clear`, reverse-index loop for safe deletion, `loadImage`/`image`, spawn timer, max-count cap.
 - **Code location:** `DontCrash.pde` (`aliens`, `spawnAlienAtEdge`, `drawPlaying`), `Obstacle.pde` (PImage display; update no longer self-respawns), `data/*.png`
 
-### Phase 6 — Inheritance (current)
+### Phase 6 — Inheritance
 - **Date:** 2026-11-09 (Asia/Shanghai)
 - **What was done:** Added `FastObstacle` and `MovingObstacle` subclasses with overridden `update()`/`display()`. Spawn mixes types into `ArrayList<Obstacle>`. Player `facing` rotates with arrow keys while position stays centred. Added `data/alien_orange.png`.
 - **Techniques used:** `extends`, `@Override`, method overriding, polymorphism via ArrayList, `rotate()` for ship facing.
 - **Code location:** `FastObstacle.pde`, `MovingObstacle.pde`, `Player.pde` (`updateFacing`), `DontCrash.pde` (`spawnAlienAtEdge`)
 
+### Phase 6+ — Health packs
+- **Date:** 2026-11-09 (Asia/Shanghai)
+- **What was done:** Added `HealthPack` pickups that do not self-move after spawn. Collecting heals +1 life, capped at 3. Arrow-key world push still shifts packs with the scene.
+- **Techniques used:** new class, `ArrayList<HealthPack>`, `Player.heal()`, spawn away from centre.
+- **Code location:** `HealthPack.pde`, `Player.heal()`, `DontCrash.pde` (`spawnHealthPack`, `handleHealthPickups`)
+
 ### Phase 7 — Animation, polymorphism, high scores (not started)
+
 ### Phase 8 — Interface/abstract class, explosion (not started)

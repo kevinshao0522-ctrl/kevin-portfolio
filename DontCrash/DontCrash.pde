@@ -20,6 +20,13 @@ Player player;
 // Phase 5: dynamic list instead of fixed alien1 / alien2 variables
 ArrayList<Obstacle> aliens;
 
+// Health pickups: spawn still, no self-movement; max 3 lives
+ArrayList<HealthPack> healthPacks;
+int framesUntilHealthSpawn = 0;
+final int HEALTH_SPAWN_MIN = 240;    // ~4s
+final int HEALTH_SPAWN_MAX = 420;    // ~7s
+final int MAX_HEALTH_PACKS = 2;
+
 // Alien sprites (loaded once in setup)
 PImage imgAlienGreen;
 PImage imgAlienPurple;
@@ -62,6 +69,7 @@ void setup() {
 
   player = new Player();
   aliens = new ArrayList<Obstacle>();
+  healthPacks = new ArrayList<HealthPack>();
   initStarfield();
 }
 
@@ -124,6 +132,10 @@ void applyArrowPush() {
   for (Obstacle alien : aliens) {
     alien.moveBy(dx, dy);
   }
+  // Health packs stay still by themselves, but move with world push
+  for (HealthPack pack : healthPacks) {
+    pack.moveBy(dx, dy);
+  }
   shiftStarfield(dx, dy);
 }
 
@@ -136,7 +148,7 @@ void drawStartScreen() {
   fill(180);
   text("Star fighter — ship stays centred", width / 2, height / 2 - 10);
   text("Arrow keys push aliens & stars the OPPOSITE way", width / 2, height / 2 + 26);
-  text("Phase 6 — inheritance + ship facing", width / 2, height / 2 + 58);
+  text("Phase 6+ — heal packs (green +) restore life to max 3", width / 2, height / 2 + 58);
   text("Press ENTER to start", width / 2, height / 2 + 96);
 }
 
@@ -153,6 +165,13 @@ void drawPlaying() {
     framesUntilSpawn = int(random(SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX));
   }
 
+  // Spawn health packs over time (they do not self-move)
+  framesUntilHealthSpawn--;
+  if (framesUntilHealthSpawn <= 0) {
+    spawnHealthPack();
+    framesUntilHealthSpawn = int(random(HEALTH_SPAWN_MIN, HEALTH_SPAWN_MAX));
+  }
+
   // Update + remove off-screen aliens (iterate backwards for safe remove)
   for (int i = aliens.size() - 1; i >= 0; i--) {
     Obstacle alien = aliens.get(i);
@@ -162,8 +181,18 @@ void drawPlaying() {
     }
   }
 
+  // Remove health packs pushed far off-screen (no self update)
+  for (int i = healthPacks.size() - 1; i >= 0; i--) {
+    if (healthPacks.get(i).isOffScreen()) {
+      healthPacks.remove(i);
+    }
+  }
+
   if (invulnFrames > 0) invulnFrames--;
   if (hitMessageFrames > 0) hitMessageFrames--;
+
+  // Pick up health before alien damage checks
+  handleHealthPickups();
 
   // Collision against every remaining alien
   if (invulnFrames <= 0) {
@@ -175,6 +204,10 @@ void drawPlaying() {
   }
 
   drawStarfield();
+
+  for (HealthPack pack : healthPacks) {
+    pack.display();
+  }
 
   for (Obstacle alien : aliens) {
     alien.display();
@@ -196,12 +229,48 @@ void drawPlaying() {
   text("Aliens: " + aliens.size() + " / " + MAX_ALIENS, 20, 44);
   text("Arrows: push world opposite | ship facing changes", 20, 68);
   text("Types: normal / FAST (orange) / zig-zag (ring)", 20, 92);
+  text("Green + : heal pack (max 3 lives)", 20, 116);
   textAlign(CENTER, CENTER);
 
   if (hitMessageFrames > 0) {
     fill(255, 220, 80);
     textSize(36);
     text(hitMessage, width / 2, 80);
+  }
+}
+
+/**
+ * Place a health pack somewhere on screen, away from the centred ship.
+ * It will stay where it is until arrow-key world push moves it.
+ */
+void spawnHealthPack() {
+  if (healthPacks.size() >= MAX_HEALTH_PACKS) return;
+
+  float px, py;
+  // Keep it away from the player centre so it is not auto-collected
+  do {
+    px = random(80, width - 80);
+    py = random(80, height - 80);
+  } while (dist(px, py, width / 2.0, height / 2.0) < 180);
+
+  healthPacks.add(new HealthPack(px, py));
+}
+
+/** Touch a pack → +1 life (cap 3), then remove the pack. */
+void handleHealthPickups() {
+  for (int i = healthPacks.size() - 1; i >= 0; i--) {
+    HealthPack pack = healthPacks.get(i);
+    if (!pack.touchesPlayer(player)) continue;
+
+    if (player.heal(1)) {
+      hitMessageFrames = 70;
+      hitMessage = "HEAL! Lives: " + player.lives + " / 3";
+      println(hitMessage);
+    } else {
+      hitMessageFrames = 70;
+      hitMessage = "Already full HP (3)";
+    }
+    healthPacks.remove(i);
   }
 }
 
@@ -256,6 +325,9 @@ boolean handleCollisionWith(Obstacle alien, int index) {
 
 void drawGameOver() {
   drawStarfield();
+  for (HealthPack pack : healthPacks) {
+    pack.display();
+  }
   for (Obstacle alien : aliens) {
     alien.display();
   }
@@ -281,8 +353,9 @@ void restartGame() {
   hitMessage = "";
   clearHoldKeys();
 
-  // Clear old list, then seed with at least two visible aliens
+  // Clear old lists, then seed with visible aliens + one heal pack
   aliens.clear();
+  healthPacks.clear();
 
   // Seed with different subclasses so inheritance is visible immediately
   Obstacle a1 = new Obstacle(180, 140, 56, 2.2, color(120, 220, 120), imgAlienGreen);
@@ -297,9 +370,13 @@ void restartGame() {
   a3.placeOnScreen(width / 2, height - 140);
   aliens.add(a3);
 
+  // One stationary heal pack at start (away from centre)
+  healthPacks.add(new HealthPack(220, height - 180));
+
   framesUntilSpawn = SPAWN_INTERVAL_MIN;
+  framesUntilHealthSpawn = HEALTH_SPAWN_MIN;
   gameState = STATE_PLAYING;
-  println("Restarted — Phase 6 inheritance active, aliens=" + aliens.size());
+  println("Restarted — heal packs enabled, aliens=" + aliens.size());
 }
 
 void clearHoldKeys() {
