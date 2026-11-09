@@ -56,6 +56,9 @@ int invulnFrames = 0;
 final int INVULN_DURATION = 90;
 int hitMessageFrames = 0;
 String hitMessage = "";
+int hitMsgR = 255;
+int hitMsgG = 220;
+int hitMsgB = 80;
 int healFlashFrames = 0;
 int crashFlashFrames = 0;
 
@@ -305,8 +308,7 @@ void updateBullets(ArrayList<Bullet> bulletList, ArrayList<Obstacle> alienList) 
       if (b.hits(alien)) {
         effects.add(new Explosion(alien.x, alien.y));
         scores.addBonus(10);
-        hitMessageFrames = 45;
-        hitMessage = "HIT! +10";
+        showHitMessage("Score +10", 255, 220, 80, 45);
         alien.markDead();
         b.markDead();
         break;
@@ -358,10 +360,18 @@ void drawHud(Player p, ScoreManager s) {
   textAlign(CENTER, CENTER);
 
   if (hitMessageFrames > 0) {
-    fill(255, 220, 80);
+    fill(hitMsgR, hitMsgG, hitMsgB);
     textSize(36);
     text(hitMessage, width / 2, 80);
   }
+}
+
+void showHitMessage(String msg, int r, int g, int b, int frames) {
+  hitMessage = msg;
+  hitMsgR = r;
+  hitMsgG = g;
+  hitMsgB = b;
+  hitMessageFrames = frames;
 }
 
 void spawnHealthPack() {
@@ -389,11 +399,9 @@ void handleHealthPickups(ArrayList<HealthPack> list) {
 
     if (player.heal(1)) {
       scores.addBonus(5);
-      hitMessageFrames = 70;
-      hitMessage = "HEAL! +5 score | Lives: " + player.getLives() + "/3";
+      showHitMessage("+1 Life  (" + player.getLives() + "/3)", 80, 255, 140, 70);
     } else {
-      hitMessageFrames = 70;
-      hitMessage = "Already full HP (3)";
+      showHitMessage("Lives Full (3/3)", 180, 220, 180, 55);
     }
     list.remove(i);
   }
@@ -427,9 +435,8 @@ void handlePlayerAlienCollisions(ArrayList<Obstacle> list) {
 
     player.loseLife();
     invulnFrames = INVULN_DURATION;
-    hitMessageFrames = 90;
     crashFlashFrames = 20;
-    hitMessage = "CRASH! Lives left: " + player.getLives();
+    showHitMessage("-1 Life  (" + player.getLives() + "/3)", 255, 90, 90, 80);
     println(hitMessage);
 
     effects.add(new Explosion(alien.x, alien.y));
@@ -480,6 +487,9 @@ void restartGame() {
   invulnFrames = 0;
   hitMessageFrames = 0;
   hitMessage = "";
+  hitMsgR = 255;
+  hitMsgG = 220;
+  hitMsgB = 80;
   healFlashFrames = 0;
   crashFlashFrames = 0;
   clearHoldKeys();
