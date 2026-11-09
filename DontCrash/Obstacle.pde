@@ -11,6 +11,7 @@ class Obstacle extends WorldObject {
 
   int framesUntilTurn;
   float drawSize;   // pulse by changing this, not scale()
+  boolean dead;     // mark first; main loop removes later
 
   Obstacle(float startX, float startY, float obstacleSize, float moveSpeed, color c) {
     this(startX, startY, obstacleSize, moveSpeed, c, null);
@@ -22,7 +23,12 @@ class Obstacle extends WorldObject {
     bodyColor = c;
     img = sprite;
     drawSize = obstacleSize;
+    dead = false;
     pickNewVelocity();
+  }
+
+  void markDead() {
+    dead = true;
   }
 
   /** Pick a random velocity using only random() on vx/vy. */
@@ -130,6 +136,6 @@ class Obstacle extends WorldObject {
   }
 
   boolean isFinished() {
-    return false;
+    return dead;
   }
 }

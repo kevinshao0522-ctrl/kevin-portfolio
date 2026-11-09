@@ -3,16 +3,24 @@
  * (No file I/O — syllabus-safe version)
  */
 class ScoreManager {
-  int currentScore;
-  int highScore;
+  private int currentScore;
+  private int highScore;
 
   // Award 1 point about every 60 frames (~1 second)
-  int frameCounter;
+  private int frameCounter;
 
   ScoreManager() {
     currentScore = 0;
     highScore = 0;
     frameCounter = 0;
+  }
+
+  int getCurrentScore() {
+    return currentScore;
+  }
+
+  int getHighScore() {
+    return highScore;
   }
 
   /** Keep the best score of this program run in memory. */

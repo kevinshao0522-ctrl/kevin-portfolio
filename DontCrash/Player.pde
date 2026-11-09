@@ -12,7 +12,7 @@ class Player implements GameEntity {
   float x;
   float y;
   float bodySize;
-  int lives;
+  private int lives;
   int facing;
 
   PImage spriteUp;
@@ -41,6 +41,20 @@ class Player implements GameEntity {
     spriteDown = down;
     spriteLeft = left;
     spriteRight = right;
+  }
+
+  int getLives() {
+    return lives;
+  }
+
+  void loseLife() {
+    if (lives > 0) {
+      lives = lives - 1;
+    }
+  }
+
+  void resetLives() {
+    lives = 3;
   }
 
   float getCollisionRadius() {

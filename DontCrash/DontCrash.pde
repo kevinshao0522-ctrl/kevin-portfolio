@@ -3,7 +3,8 @@
  *
  * Syllabus-safe rewrite:
  * - No trig / matrix / noise / file I/O
- * - if/else states, key polling, discrete facing
+ * - if/else states, key hold flags, discrete facing
+ * - dead marks + end-of-loop remove; helpers for update/HUD
  */
 
 // ---------- Game states ----------
@@ -48,6 +49,7 @@ boolean holdLeft = false;
 boolean holdRight = false;
 boolean holdUp = false;
 boolean holdDown = false;
+boolean holdSpace = false;
 float pushSpeed = 6.0;
 
 int invulnFrames = 0;
@@ -144,7 +146,6 @@ void applyArrowPush() {
   if (holdUp)    dy = dy + pushSpeed;
   if (holdDown)  dy = dy - pushSpeed;
 
-  // Update ship facing from currently held keys
   player.updateFacing(holdLeft, holdRight, holdUp, holdDown);
 
   if (dx == 0 && dy == 0) return;
@@ -179,104 +180,181 @@ void drawPlaying() {
   player.update();
   scores.updateSurvivalScore();
 
-  framesUntilSpawn--;
-  if (framesUntilSpawn <= 0) {
-    spawnAlienAtEdge();
-    framesUntilSpawn = int(random(SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX));
-  }
+  updateAlienSpawning();
+  updateHealthSpawning();
 
-  framesUntilHealthSpawn--;
-  if (framesUntilHealthSpawn <= 0) {
-    spawnHealthPack();
-    framesUntilHealthSpawn = int(random(HEALTH_SPAWN_MIN, HEALTH_SPAWN_MAX));
-  }
+  updateAliens(aliens);
+  updateHealthPacks(healthPacks);
+  updateEffects(effects);
 
-  for (int i = aliens.size() - 1; i >= 0; i--) {
-    Obstacle alien = aliens.get(i);
-    alien.update();
-    if (alien.isOffScreen()) {
-      aliens.remove(i);
-    }
+  if (fireCooldown > 0) {
+    fireCooldown = fireCooldown - 1;
   }
-
-  for (int i = healthPacks.size() - 1; i >= 0; i--) {
-    HealthPack pack = healthPacks.get(i);
-    pack.update();
-    if (pack.isOffScreen()) {
-      healthPacks.remove(i);
-    }
+  // Hold SPACE for continuous fire (cooldown still applies)
+  if (holdSpace) {
+    tryFireBullet();
   }
-
-  for (int i = effects.size() - 1; i >= 0; i--) {
-    GameEntity e = effects.get(i);
-    e.update();
-    if (e.isFinished()) {
-      effects.remove(i);
-    }
-  }
-
-  if (fireCooldown > 0) fireCooldown--;
-  for (int i = bullets.size() - 1; i >= 0; i--) {
-    Bullet b = bullets.get(i);
-    b.update();
-    if (b.isFinished()) {
-      bullets.remove(i);
-      continue;
-    }
-    for (int j = aliens.size() - 1; j >= 0; j--) {
-      Obstacle alien = aliens.get(j);
-      if (b.hits(alien)) {
-        effects.add(new Explosion(alien.x, alien.y));
-        scores.addBonus(10);
-        hitMessageFrames = 45;
-        hitMessage = "HIT! +10";
-        aliens.remove(j);
-        b.markDead();
-        bullets.remove(i);
-        break;
-      }
-    }
-  }
+  updateBullets(bullets, aliens);
 
   if (invulnFrames > 0) invulnFrames--;
   if (hitMessageFrames > 0) hitMessageFrames--;
   if (healFlashFrames > 0) healFlashFrames--;
   if (crashFlashFrames > 0) crashFlashFrames--;
 
-  handleHealthPickups();
+  handleHealthPickups(healthPacks);
 
   if (invulnFrames <= 0) {
-    for (int i = aliens.size() - 1; i >= 0; i--) {
-      if (handleCollisionWith(aliens.get(i), i)) {
-        break;
-      }
-    }
+    handlePlayerAlienCollisions(aliens);
   }
+
+  // Uniform cleanup after all mark-dead decisions
+  removeDeadAliens(aliens);
+  removeFinishedBullets(bullets);
 
   drawStarfield();
-
-  for (HealthPack pack : healthPacks) {
-    pack.display();
-  }
-  for (Obstacle alien : aliens) {
-    alien.display();
-  }
-  for (Bullet b : bullets) {
-    b.display();
-  }
-  for (GameEntity e : effects) {
-    e.display();
-  }
+  drawWorldEntities(healthPacks, aliens, bullets, effects);
 
   if (invulnFrames <= 0 || (frameCount / 4) % 2 == 0) {
     player.display();
   }
 
+  drawHud(player, scores);
+}
+
+/** Shrink spawn window as score rises (if + random only). */
+void updateAlienSpawning() {
+  framesUntilSpawn--;
+  if (framesUntilSpawn > 0) return;
+
+  spawnAlienAtEdge();
+
+  int spawnMin = SPAWN_INTERVAL_MIN;
+  int spawnMax = SPAWN_INTERVAL_MAX;
+  int scoreNow = scores.getCurrentScore();
+
+  if (scoreNow > 50) {
+    spawnMin = 35;
+    spawnMax = 80;
+  }
+  if (scoreNow > 100) {
+    spawnMin = 25;
+    spawnMax = 60;
+  }
+  if (scoreNow > 200) {
+    spawnMin = 18;
+    spawnMax = 45;
+  }
+
+  framesUntilSpawn = int(random(spawnMin, spawnMax));
+}
+
+void updateHealthSpawning() {
+  framesUntilHealthSpawn--;
+  if (framesUntilHealthSpawn <= 0) {
+    spawnHealthPack();
+    framesUntilHealthSpawn = int(random(HEALTH_SPAWN_MIN, HEALTH_SPAWN_MAX));
+  }
+}
+
+void updateAliens(ArrayList<Obstacle> list) {
+  for (int i = 0; i < list.size(); i++) {
+    Obstacle alien = list.get(i);
+    if (alien.dead) continue;
+    alien.update();
+    if (alien.isOffScreen()) {
+      alien.markDead();
+    }
+  }
+}
+
+void updateHealthPacks(ArrayList<HealthPack> list) {
+  for (int i = list.size() - 1; i >= 0; i--) {
+    HealthPack pack = list.get(i);
+    pack.update();
+    if (pack.isOffScreen()) {
+      list.remove(i);
+    }
+  }
+}
+
+void updateEffects(ArrayList<GameEntity> list) {
+  for (int i = list.size() - 1; i >= 0; i--) {
+    GameEntity e = list.get(i);
+    e.update();
+    if (e.isFinished()) {
+      list.remove(i);
+    }
+  }
+}
+
+/**
+ * Update bullets and mark hits. Do not remove mid-loop —
+ * dead aliens / finished bullets are cleared later.
+ */
+void updateBullets(ArrayList<Bullet> bulletList, ArrayList<Obstacle> alienList) {
+  for (int i = 0; i < bulletList.size(); i++) {
+    Bullet b = bulletList.get(i);
+    if (b.isFinished()) continue;
+
+    b.update();
+
+    for (int j = 0; j < alienList.size(); j++) {
+      Obstacle alien = alienList.get(j);
+      if (alien.dead) continue;
+
+      if (b.hits(alien)) {
+        effects.add(new Explosion(alien.x, alien.y));
+        scores.addBonus(10);
+        hitMessageFrames = 45;
+        hitMessage = "HIT! +10";
+        alien.markDead();
+        b.markDead();
+        break;
+      }
+    }
+  }
+}
+
+void removeDeadAliens(ArrayList<Obstacle> list) {
+  for (int i = list.size() - 1; i >= 0; i--) {
+    if (list.get(i).dead) {
+      list.remove(i);
+    }
+  }
+}
+
+void removeFinishedBullets(ArrayList<Bullet> list) {
+  for (int i = list.size() - 1; i >= 0; i--) {
+    if (list.get(i).isFinished()) {
+      list.remove(i);
+    }
+  }
+}
+
+void drawWorldEntities(ArrayList<HealthPack> packs,
+                       ArrayList<Obstacle> alienList,
+                       ArrayList<Bullet> bulletList,
+                       ArrayList<GameEntity> effectList) {
+  for (HealthPack pack : packs) {
+    pack.display();
+  }
+  for (Obstacle alien : alienList) {
+    alien.display();
+  }
+  for (Bullet b : bulletList) {
+    b.display();
+  }
+  for (GameEntity e : effectList) {
+    e.display();
+  }
+}
+
+void drawHud(Player p, ScoreManager s) {
   fill(200);
   textSize(16);
   textAlign(LEFT, TOP);
-  text("Lives: " + player.lives, 20, 20);
-  text("Score: " + scores.currentScore, 20, 44);
+  text("Lives: " + p.getLives(), 20, 20);
+  text("Score: " + s.getCurrentScore(), 20, 44);
   textAlign(CENTER, CENTER);
 
   if (hitMessageFrames > 0) {
@@ -292,7 +370,6 @@ void spawnHealthPack() {
   float px = random(80, width - 80);
   float py = random(80, height - 80);
 
-  // Retry with while (not do-while) until far enough from centre
   int tries = 0;
   while (dist(px, py, width / 2.0, height / 2.0) < 180 && tries < 30) {
     px = random(80, width - 80);
@@ -303,9 +380,9 @@ void spawnHealthPack() {
   healthPacks.add(new HealthPack(px, py));
 }
 
-void handleHealthPickups() {
-  for (int i = healthPacks.size() - 1; i >= 0; i--) {
-    HealthPack pack = healthPacks.get(i);
+void handleHealthPickups(ArrayList<HealthPack> list) {
+  for (int i = list.size() - 1; i >= 0; i--) {
+    HealthPack pack = list.get(i);
     if (!pack.touchesPlayer(player)) continue;
 
     healFlashFrames = 45;
@@ -313,12 +390,12 @@ void handleHealthPickups() {
     if (player.heal(1)) {
       scores.addBonus(5);
       hitMessageFrames = 70;
-      hitMessage = "HEAL! +5 score | Lives: " + player.lives + "/3";
+      hitMessage = "HEAL! +5 score | Lives: " + player.getLives() + "/3";
     } else {
       hitMessageFrames = 70;
       hitMessage = "Already full HP (3)";
     }
-    healthPacks.remove(i);
+    list.remove(i);
   }
 }
 
@@ -341,64 +418,53 @@ void spawnAlienAtEdge() {
   aliens.add(alien);
 }
 
-boolean handleCollisionWith(Obstacle alien, int index) {
-  if (!player.checkCollision(alien)) return false;
+/** Mark crashed alien dead; removal happens in removeDeadAliens. */
+void handlePlayerAlienCollisions(ArrayList<Obstacle> list) {
+  for (int i = 0; i < list.size(); i++) {
+    Obstacle alien = list.get(i);
+    if (alien.dead) continue;
+    if (!player.checkCollision(alien)) continue;
 
-  player.lives--;
-  invulnFrames = INVULN_DURATION;
-  hitMessageFrames = 90;
-  crashFlashFrames = 20;
-  hitMessage = "CRASH! Lives left: " + player.lives;
-  println(hitMessage);
+    player.loseLife();
+    invulnFrames = INVULN_DURATION;
+    hitMessageFrames = 90;
+    crashFlashFrames = 20;
+    hitMessage = "CRASH! Lives left: " + player.getLives();
+    println(hitMessage);
 
-  effects.add(new Explosion(alien.x, alien.y));
-  aliens.remove(index);
+    effects.add(new Explosion(alien.x, alien.y));
+    alien.markDead();
 
-  if (player.lives <= 0) {
-    endRun();
+    if (player.getLives() <= 0) {
+      endRun();
+    }
+    return;
   }
-  return true;
 }
 
 void endRun() {
   gameState = STATE_GAME_OVER;
   clearHoldKeys();
   scores.saveHighScore();
-  println("GAME OVER — score=" + scores.currentScore + " high=" + scores.highScore);
+  println("GAME OVER — score=" + scores.getCurrentScore() +
+          " high=" + scores.getHighScore());
 }
 
+/** End screen: starfield + text only (no entities / no full-screen cover). */
 void drawGameOver() {
   drawStarfield();
-  for (HealthPack pack : healthPacks) {
-    pack.display();
-  }
-  for (Obstacle alien : aliens) {
-    alien.display();
-  }
-  for (Bullet b : bullets) {
-    b.display();
-  }
-  for (GameEntity e : effects) {
-    e.display();
-  }
-  player.display();
 
-  // Opaque dark panel (no alpha)
-  fill(20, 20, 30);
-  rect(0, 0, width, height);
-
-  // Redraw text on top of panel — need entities already drawn above; panel covers them.
-  // Re-show scores only:
   fill(255, 80, 80);
   textSize(56);
   text("GAME OVER", width / 2, height / 2 - 70);
 
   fill(220);
   textSize(24);
-  text("Score: " + scores.currentScore, width / 2, height / 2 - 10);
-  text("High Score: " + scores.highScore, width / 2, height / 2 + 26);
+  text("Score: " + scores.getCurrentScore(), width / 2, height / 2 - 10);
+  text("High Score: " + scores.getHighScore(), width / 2, height / 2 + 26);
 
-  if (scores.currentScore >= scores.highScore && scores.currentScore > 0) {
+  if (scores.getCurrentScore() >= scores.getHighScore() &&
+      scores.getCurrentScore() > 0) {
     fill(255, 220, 80);
     text("New record this run!", width / 2, height / 2 + 64);
   }
@@ -409,7 +475,7 @@ void drawGameOver() {
 }
 
 void restartGame() {
-  player.lives = 3;
+  player.resetLives();
   player.facing = player.DIR_UP;
   invulnFrames = 0;
   hitMessageFrames = 0;
@@ -442,7 +508,7 @@ void restartGame() {
   framesUntilSpawn = SPAWN_INTERVAL_MIN;
   framesUntilHealthSpawn = HEALTH_SPAWN_MIN;
   gameState = STATE_PLAYING;
-  println("Restarted — syllabus-safe controls");
+  println("Restarted — review refactor applied");
 }
 
 void tryFireBullet() {
@@ -471,7 +537,7 @@ void keyPressed() {
   if (keyCode == DOWN)  holdDown = true;
 
   if (key == ' ') {
-    tryFireBullet();
+    holdSpace = true;
   }
 }
 
@@ -480,6 +546,9 @@ void keyReleased() {
   if (keyCode == RIGHT) holdRight = false;
   if (keyCode == UP)    holdUp = false;
   if (keyCode == DOWN)  holdDown = false;
+  if (key == ' ') {
+    holdSpace = false;
+  }
 }
 
 void clearHoldKeys() {
@@ -487,4 +556,5 @@ void clearHoldKeys() {
   holdRight = false;
   holdUp = false;
   holdDown = false;
+  holdSpace = false;
 }
