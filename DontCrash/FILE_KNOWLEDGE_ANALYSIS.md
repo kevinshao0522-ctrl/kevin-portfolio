@@ -199,7 +199,7 @@
 - 构造方法重载：`Player()` / `Player(PImage)`
 - **`boolean checkCollision(Obstacle)`**（作业要求的布尔碰撞）
 - 圆形碰撞：`dist()`
-- 回血有上限（`min(3, ...)`）
+- 回血有上限（`if/else` 封顶到 3）
 - 方向键改变朝向：`atan2`
 - 帧索引**动画序列**（引擎尾焰）
 - `PImage` 飞船图 + 几何图形备用

@@ -55,7 +55,12 @@ class Player implements GameEntity {
 
   boolean heal(int amount) {
     if (lives >= 3) return false;
-    lives = min(3, lives + amount);
+    // Cap lives at 3 with if/else (no min/max)
+    if (lives + amount > 3) {
+      lives = 3;
+    } else {
+      lives = lives + amount;
+    }
     return true;
   }
 
