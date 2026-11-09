@@ -62,14 +62,13 @@ float[] starX = new float[STAR_COUNT];
 float[] starY = new float[STAR_COUNT];
 float[] starBright = new float[STAR_COUNT];
 
-PFont uiFont;  // system font so Chinese HUD text can render
+PFont uiFont;
 
 void setup() {
   size(1280, 800);
   textAlign(CENTER, CENTER);
   imageMode(CENTER);
 
-  // Prefer a font that can show 生命值 / 分数 on the player's OS
   uiFont = createFont("SansSerif", 18);
   textFont(uiFont);
 
@@ -285,8 +284,8 @@ void drawPlaying() {
   fill(200);
   textSize(16);
   textAlign(LEFT, TOP);
-  text("生命值: " + player.lives, 20, 20);
-  text("分数: " + scores.currentScore, 20, 44);
+  text("Lives: " + player.lives, 20, 20);
+  text("Score: " + scores.currentScore, 20, 44);
   textAlign(CENTER, CENTER);
 
   if (hitMessageFrames > 0) {
