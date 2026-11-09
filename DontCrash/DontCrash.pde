@@ -153,20 +153,12 @@ void applyArrowPush() {
 
 void drawStartScreen() {
   fill(240);
-  textSize(52);
-  text("Don't Crash!!", width / 2, height / 2 - 80);
+  textSize(64);
+  text("Don't Crash!!", width / 2, height / 2 - 30);
 
-  textSize(20);
+  textSize(22);
   fill(180);
-  text("Star fighter — ship stays centred", width / 2, height / 2 - 20);
-  text("Arrows: push world opposite | SPACE: shoot", width / 2, height / 2 + 14);
-  text("Phase 8+ — lasers + explosions", width / 2, height / 2 + 46);
-
-  fill(255, 220, 100);
-  text("High Score: " + scores.highScore, width / 2, height / 2 + 86);
-
-  fill(180);
-  text("Press ENTER to start", width / 2, height / 2 + 126);
+  text("Press ENTER to start", width / 2, height / 2 + 40);
 }
 
 void drawPlaying() {
