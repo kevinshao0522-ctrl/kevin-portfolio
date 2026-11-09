@@ -33,13 +33,21 @@ final int MAX_HEALTH_PACKS = 2;
 PImage imgAlienGreen;
 PImage imgAlienPurple;
 PImage imgAlienOrange;
-PImage imgPlayerShip;
+PImage imgShipUp;
+PImage imgShipDown;
+PImage imgShipLeft;
+PImage imgShipRight;
 
 int framesUntilSpawn = 0;
 final int SPAWN_INTERVAL_MIN = 45;
 final int SPAWN_INTERVAL_MAX = 100;
 final int MAX_ALIENS = 12;
 
+// Hold flags — updated in keyPressed / keyReleased for instant response
+boolean holdLeft = false;
+boolean holdRight = false;
+boolean holdUp = false;
+boolean holdDown = false;
 float pushSpeed = 6.0;
 
 int invulnFrames = 0;
@@ -61,9 +69,13 @@ void setup() {
   imgAlienGreen = loadImage("alien_green.png");
   imgAlienPurple = loadImage("alien_purple.png");
   imgAlienOrange = loadImage("alien_orange.png");
-  imgPlayerShip = loadImage("player_ship.png");
+  // Four facing sprites (pre-rotated offline — no rotate() in game code)
+  imgShipUp = loadImage("player_ship_up.png");
+  imgShipDown = loadImage("player_ship_down.png");
+  imgShipLeft = loadImage("player_ship_left.png");
+  imgShipRight = loadImage("player_ship_right.png");
 
-  player = new Player(imgPlayerShip);
+  player = new Player(imgShipUp, imgShipDown, imgShipLeft, imgShipRight);
   scores = new ScoreManager();
   aliens = new ArrayList<Obstacle>();
   healthPacks = new ArrayList<HealthPack>();
@@ -120,28 +132,20 @@ void shiftStarfield(float dx, float dy) {
 }
 
 /**
- * Read arrow keys each frame via keyPressed + keyCode
- * (no keyReleased / hold flags).
+ * Use hold flags so direction changes immediately when a key goes down,
+ * and stops immediately when released (no OS key-repeat delay).
  */
 void applyArrowPush() {
   float dx = 0;
   float dy = 0;
 
-  if (keyPressed) {
-    if (keyCode == LEFT) {
-      dx = pushSpeed;
-      player.facing = player.DIR_LEFT;
-    } else if (keyCode == RIGHT) {
-      dx = -pushSpeed;
-      player.facing = player.DIR_RIGHT;
-    } else if (keyCode == UP) {
-      dy = pushSpeed;
-      player.facing = player.DIR_UP;
-    } else if (keyCode == DOWN) {
-      dy = -pushSpeed;
-      player.facing = player.DIR_DOWN;
-    }
-  }
+  if (holdLeft)  dx = dx + pushSpeed;
+  if (holdRight) dx = dx - pushSpeed;
+  if (holdUp)    dy = dy + pushSpeed;
+  if (holdDown)  dy = dy - pushSpeed;
+
+  // Update ship facing from currently held keys
+  player.updateFacing(holdLeft, holdRight, holdUp, holdDown);
 
   if (dx == 0 && dy == 0) return;
 
@@ -358,6 +362,7 @@ boolean handleCollisionWith(Obstacle alien, int index) {
 
 void endRun() {
   gameState = STATE_GAME_OVER;
+  clearHoldKeys();
   scores.saveHighScore();
   println("GAME OVER — score=" + scores.currentScore + " high=" + scores.highScore);
 }
@@ -411,6 +416,7 @@ void restartGame() {
   hitMessage = "";
   healFlashFrames = 0;
   crashFlashFrames = 0;
+  clearHoldKeys();
   scores.resetRun();
 
   aliens.clear();
@@ -459,8 +465,26 @@ void keyPressed() {
 
   if (gameState != STATE_PLAYING) return;
 
-  // SPACE fires; arrows are read each frame in applyArrowPush()
+  if (keyCode == LEFT)  holdLeft = true;
+  if (keyCode == RIGHT) holdRight = true;
+  if (keyCode == UP)    holdUp = true;
+  if (keyCode == DOWN)  holdDown = true;
+
   if (key == ' ') {
     tryFireBullet();
   }
+}
+
+void keyReleased() {
+  if (keyCode == LEFT)  holdLeft = false;
+  if (keyCode == RIGHT) holdRight = false;
+  if (keyCode == UP)    holdUp = false;
+  if (keyCode == DOWN)  holdDown = false;
+}
+
+void clearHoldKeys() {
+  holdLeft = false;
+  holdRight = false;
+  holdUp = false;
+  holdDown = false;
 }

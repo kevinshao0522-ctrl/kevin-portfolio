@@ -1,9 +1,9 @@
 /**
  * Player — spaceship fixed at screen centre.
- * Facing uses four discrete directions (no atan2 / rotate).
+ * Facing uses four discrete directions.
+ * Visual flip = swap among 4 pre-made sprites (no runtime rotate).
  */
 class Player implements GameEntity {
-  // Direction constants
   final int DIR_UP = 0;
   final int DIR_RIGHT = 1;
   final int DIR_DOWN = 2;
@@ -13,8 +13,12 @@ class Player implements GameEntity {
   float y;
   float bodySize;
   int lives;
-  int facing;       // one of DIR_UP / RIGHT / DOWN / LEFT
-  PImage sprite;
+  int facing;
+
+  PImage spriteUp;
+  PImage spriteDown;
+  PImage spriteLeft;
+  PImage spriteRight;
 
   int animFrame;
   int animTimer;
@@ -22,10 +26,10 @@ class Player implements GameEntity {
   final int ANIM_COUNT = 4;
 
   Player() {
-    this(null);
+    this(null, null, null, null);
   }
 
-  Player(PImage shipImage) {
+  Player(PImage up, PImage down, PImage left, PImage right) {
     x = width / 2.0;
     y = height / 2.0;
     bodySize = 72;
@@ -33,7 +37,10 @@ class Player implements GameEntity {
     facing = DIR_UP;
     animFrame = 0;
     animTimer = 0;
-    sprite = shipImage;
+    spriteUp = up;
+    spriteDown = down;
+    spriteLeft = left;
+    spriteRight = right;
   }
 
   float getCollisionRadius() {
@@ -52,15 +59,14 @@ class Player implements GameEntity {
     return true;
   }
 
-  /** Set facing from held arrow keys (discrete 4-way). */
   void updateFacing(boolean left, boolean right, boolean up, boolean down) {
+    // Last pressed direction wins if several are held
     if (left)  facing = DIR_LEFT;
     if (right) facing = DIR_RIGHT;
     if (up)    facing = DIR_UP;
     if (down)  facing = DIR_DOWN;
   }
 
-  /** Bullet velocity for current facing (no trig). */
   float getBulletVx(float speed) {
     if (facing == DIR_LEFT)  return -speed;
     if (facing == DIR_RIGHT) return speed;
@@ -73,7 +79,6 @@ class Player implements GameEntity {
     return 0;
   }
 
-  /** Nose offset for spawning bullets (no trig). */
   float getNoseX() {
     if (facing == DIR_LEFT)  return x - bodySize * 0.55;
     if (facing == DIR_RIGHT) return x + bodySize * 0.55;
@@ -84,6 +89,13 @@ class Player implements GameEntity {
     if (facing == DIR_UP)   return y - bodySize * 0.55;
     if (facing == DIR_DOWN) return y + bodySize * 0.55;
     return y;
+  }
+
+  PImage currentSprite() {
+    if (facing == DIR_DOWN)  return spriteDown;
+    if (facing == DIR_LEFT)  return spriteLeft;
+    if (facing == DIR_RIGHT) return spriteRight;
+    return spriteUp;
   }
 
   void update() {
@@ -99,7 +111,6 @@ class Player implements GameEntity {
   }
 
   void moveBy(float dx, float dy) {
-    // Ship stays centred.
   }
 
   boolean isFinished() {
@@ -109,9 +120,8 @@ class Player implements GameEntity {
   void display() {
     float flameLen = 12 + animFrame * 6;
     noStroke();
-
-    // Engine flame behind ship (position depends on facing)
     fill(255, 160, 40);
+
     if (facing == DIR_UP) {
       ellipse(x - bodySize * 0.12, y + bodySize * 0.42 + flameLen * 0.2, 10, flameLen);
       ellipse(x + bodySize * 0.12, y + bodySize * 0.42 + flameLen * 0.2, 10, flameLen);
@@ -126,17 +136,18 @@ class Player implements GameEntity {
       ellipse(x - bodySize * 0.42 - flameLen * 0.2, y + bodySize * 0.12, flameLen, 10);
     }
 
-    float drawH = bodySize * 1.35;
-    float drawW = drawH;
-    if (sprite != null) {
-      drawW = drawH * (sprite.width / float(sprite.height));
-    }
-
-    // Draw ship without rotate: for left/right use swapped width/height look via geometry
-    if (sprite != null) {
-      // Always draw upright sprite; facing shown by flame + bullet direction
-      // (avoids rotate). Image drawn from top-left using default imageMode.
-      image(sprite, x - drawW / 2, y - drawH / 2, drawW, drawH);
+    PImage spr = currentSprite();
+    if (spr != null) {
+      float drawH;
+      float drawW;
+      if (facing == DIR_LEFT || facing == DIR_RIGHT) {
+        drawW = bodySize * 1.35;
+        drawH = drawW * (spr.height / float(spr.width));
+      } else {
+        drawH = bodySize * 1.35;
+        drawW = drawH * (spr.width / float(spr.height));
+      }
+      image(spr, x - drawW / 2, y - drawH / 2, drawW, drawH);
     } else {
       fill(180, 210, 255);
       if (facing == DIR_UP) {
@@ -156,8 +167,6 @@ class Player implements GameEntity {
                  x - bodySize * 0.55, y - bodySize * 0.55,
                  x - bodySize * 0.55, y + bodySize * 0.55);
       }
-      fill(80, 160, 255);
-      ellipse(x, y, bodySize * 0.35, bodySize * 0.35);
     }
   }
 }
