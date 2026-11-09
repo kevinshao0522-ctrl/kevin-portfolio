@@ -25,13 +25,18 @@ arrow keys move aliens/background the opposite way; shooting comes later.
 - **Screenshot:** (add when you run it locally)
 - **Code location:** `Player.pde`, `Obstacle.pde`, `DontCrash.pde` (`drawPlaying()`)
 
-### Phase 3 — Keyboard controls (current)
+### Phase 3 — Keyboard controls
 - **Date:** 2026-11-09 (Asia/Shanghai)
 - **What was done:** Arrow keys push all aliens and the starfield in the opposite direction while the ship stays centred. Hold flags + `keyPressed`/`keyReleased` support continuous steering. Stars wrap around the screen.
 - **Techniques used:** `keyCode` (LEFT/RIGHT/UP/DOWN), `keyPressed`/`keyReleased`, boolean hold flags, opposite-direction delta, `Obstacle.moveBy()`, starfield wrap.
 - **Code location:** `DontCrash.pde` — `applyArrowPush()`, `shiftStarfield()`, `keyPressed()`, `keyReleased()`
 
-### Phase 4 — Collision detection (not started)
+### Phase 4 — Collision detection (current)
+- **Date:** 2026-11-09 (Asia/Shanghai)
+- **What was done:** Implemented `boolean checkCollision(Obstacle obstacle)` on `Player` (circle vs circle with `dist()`). On hit: lose a life, show "CRASH!" message, red flash, blink invulnerability, respawn alien. Lives 0 → `GAME_OVER`; ENTER restarts.
+- **Techniques used:** `dist()`, boolean method return, invulnerability timer, game state transition, on-screen feedback.
+- **Code location:** `Player.pde` (`checkCollision`), `Obstacle.pde` (`getCollisionRadius`), `DontCrash.pde` (`handleCollisionWith`, `drawGameOver`, `restartGame`)
+
 ### Phase 5 — Dynamic obstacles / ArrayList (not started)
 ### Phase 6 — Inheritance (not started)
 ### Phase 7 — Animation, polymorphism, high scores (not started)

@@ -167,4 +167,9 @@ class Obstacle {
     return (x < -margin || x > width + margin ||
             y < -margin || y > height + margin);
   }
+
+  /** Approximate collision radius used by Player.checkCollision(). */
+  float getCollisionRadius() {
+    return size * 0.4;
+  }
 }
