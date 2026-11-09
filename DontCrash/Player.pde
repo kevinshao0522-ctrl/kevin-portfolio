@@ -2,7 +2,7 @@
  * Player — the player's spaceship.
  *
  * Stays FIXED at the screen centre.
- * Implements GameEntity so most entities share one polymorphic API (Phase 8).
+ * Uses PImage sprite (data/player_ship.png) when available.
  */
 class Player implements GameEntity {
   float x;
@@ -10,6 +10,7 @@ class Player implements GameEntity {
   float bodySize;
   int lives;
   float facing;
+  PImage sprite;   // custom ship art
 
   // Animation: 4 engine frames, advanced every few draw cycles
   int animFrame;
@@ -18,13 +19,18 @@ class Player implements GameEntity {
   final int ANIM_COUNT = 4;
 
   Player() {
+    this(null);
+  }
+
+  Player(PImage shipImage) {
     x = width / 2.0;
     y = height / 2.0;
-    bodySize = 48;
+    bodySize = 72;          // a bit larger to show the detailed sprite
     lives = 3;
     facing = -HALF_PI;
     animFrame = 0;
     animTimer = 0;
+    sprite = shipImage;
   }
 
   float getCollisionRadius() {
@@ -80,29 +86,35 @@ class Player implements GameEntity {
   void display() {
     pushMatrix();
     translate(x, y);
+    // Art points "up"; rotate so nose matches facing.
     rotate(facing + HALF_PI);
 
-    noStroke();
-    fill(180, 210, 255);
-    triangle(0, -bodySize * 0.7,
-             -bodySize * 0.55, bodySize * 0.55,
-             bodySize * 0.55, bodySize * 0.55);
-
-    fill(80, 160, 255);
-    ellipse(0, 0, bodySize * 0.35, bodySize * 0.35);
-
-    // Animated engine exhaust — length/brightness changes by animFrame
-    float flameLen = 10 + animFrame * 5;
+    // Animated engine exhaust drawn BEHIND the sprite
+    float flameLen = 12 + animFrame * 6;
     float flameAlpha = 160 + animFrame * 20;
+    noStroke();
     fill(255, 160, 40, flameAlpha);
-    ellipse(-bodySize * 0.2, bodySize * 0.55 + flameLen * 0.15, 8, flameLen);
-    ellipse(bodySize * 0.2, bodySize * 0.55 + flameLen * 0.15, 8, flameLen);
+    ellipse(-bodySize * 0.12, bodySize * 0.42 + flameLen * 0.2, 10, flameLen);
+    ellipse(bodySize * 0.12, bodySize * 0.42 + flameLen * 0.2, 10, flameLen);
     fill(255, 230, 120, flameAlpha);
-    ellipse(-bodySize * 0.2, bodySize * 0.55, 5, flameLen * 0.5);
-    ellipse(bodySize * 0.2, bodySize * 0.55, 5, flameLen * 0.5);
+    ellipse(-bodySize * 0.12, bodySize * 0.42, 6, flameLen * 0.45);
+    ellipse(bodySize * 0.12, bodySize * 0.42, 6, flameLen * 0.45);
 
-    fill(255, 255, 120);
-    ellipse(0, -bodySize * 0.55, 8, 8);
+    if (sprite != null) {
+      imageMode(CENTER);
+      // Keep aspect: sprite is taller than wide
+      float drawH = bodySize * 1.35;
+      float drawW = drawH * (sprite.width / float(sprite.height));
+      image(sprite, 0, 0, drawW, drawH);
+    } else {
+      // Fallback geometric ship if image missing
+      fill(180, 210, 255);
+      triangle(0, -bodySize * 0.7,
+               -bodySize * 0.55, bodySize * 0.55,
+               bodySize * 0.55, bodySize * 0.55);
+      fill(80, 160, 255);
+      ellipse(0, 0, bodySize * 0.35, bodySize * 0.35);
+    }
 
     popMatrix();
   }

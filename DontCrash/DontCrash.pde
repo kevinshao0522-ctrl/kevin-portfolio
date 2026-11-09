@@ -38,6 +38,7 @@ final int MAX_HEALTH_PACKS = 2;
 PImage imgAlienGreen;
 PImage imgAlienPurple;
 PImage imgAlienOrange;
+PImage imgPlayerShip;
 
 int framesUntilSpawn = 0;
 final int SPAWN_INTERVAL_MIN = 45;
@@ -68,8 +69,9 @@ void setup() {
   imgAlienGreen = loadImage("alien_green.png");
   imgAlienPurple = loadImage("alien_purple.png");
   imgAlienOrange = loadImage("alien_orange.png");
+  imgPlayerShip = loadImage("player_ship.png");  // custom ship sprite
 
-  player = new Player();
+  player = new Player(imgPlayerShip);
   scores = new ScoreManager();   // loads highscore.txt
   aliens = new ArrayList<Obstacle>();
   healthPacks = new ArrayList<HealthPack>();

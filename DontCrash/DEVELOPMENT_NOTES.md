@@ -73,5 +73,12 @@ arrow keys move aliens/background the opposite way; shooting comes later.
 - **Techniques used:** `key == ' '`, projectile list, bullet-obstacle collision, cooldown timer.
 - **Code location:** `Bullet.pde`, `DontCrash.pde` (`tryFireBullet`, bullet update loop)
 
+### Art pass — custom player ship
+- **Date:** 2026-11-09 (Asia/Shanghai)
+- **What was done:** Converted provided ship JPG (checkerboard background) to transparent PNG `data/player_ship.png` and drew it via `Player` sprite with engine flame still animated underneath.
+- **Techniques used:** image preprocessing, `PImage`, `image()`, fallback shape drawing.
+- **Code location:** `data/player_ship.png`, `Player.pde`, `DontCrash.pde` (`loadImage`)
+
+
 
 
