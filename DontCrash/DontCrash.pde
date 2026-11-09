@@ -1,11 +1,10 @@
 /**
  * Don't Crash!! — Star Wars theme (Scheme A)
  *
- * Phase 5:
- * - ArrayList manages all aliens
- * - New aliens spawn over time
- * - Off-screen / hit aliens are removed from the list (no leftover objects)
- * - PImage sprites for aliens (data/alien_*.png)
+ * Phase 6:
+ * - Inheritance: FastObstacle + MovingObstacle extend Obstacle
+ * - ArrayList<Obstacle> stores mixed types (polymorphism)
+ * - Player ship facing / appearance changes with arrow keys
  */
 
 // ---------- Game states ----------
@@ -24,6 +23,7 @@ ArrayList<Obstacle> aliens;
 // Alien sprites (loaded once in setup)
 PImage imgAlienGreen;
 PImage imgAlienPurple;
+PImage imgAlienOrange;
 
 // Spawn control
 int framesUntilSpawn = 0;
@@ -58,6 +58,7 @@ void setup() {
   // Load obstacle images from the data folder (PImage)
   imgAlienGreen = loadImage("alien_green.png");
   imgAlienPurple = loadImage("alien_purple.png");
+  imgAlienOrange = loadImage("alien_orange.png");
 
   player = new Player();
   aliens = new ArrayList<Obstacle>();
@@ -135,12 +136,15 @@ void drawStartScreen() {
   fill(180);
   text("Star fighter — ship stays centred", width / 2, height / 2 - 10);
   text("Arrow keys push aliens & stars the OPPOSITE way", width / 2, height / 2 + 26);
-  text("Phase 5 — ArrayList dynamic aliens", width / 2, height / 2 + 58);
+  text("Phase 6 — inheritance + ship facing", width / 2, height / 2 + 58);
   text("Press ENTER to start", width / 2, height / 2 + 96);
 }
 
 void drawPlaying() {
   applyArrowPush();
+
+  // Phase 6: ship nose turns with arrow keys (position still fixed)
+  player.updateFacing(holdLeft, holdRight, holdUp, holdDown);
 
   // Spawn new aliens over time
   framesUntilSpawn--;
@@ -190,7 +194,8 @@ void drawPlaying() {
   textAlign(LEFT, TOP);
   text("Lives: " + player.lives, 20, 20);
   text("Aliens: " + aliens.size() + " / " + MAX_ALIENS, 20, 44);
-  text("Arrows: push world opposite | Avoid aliens", 20, 68);
+  text("Arrows: push world opposite | ship facing changes", 20, 68);
+  text("Types: normal / FAST (orange) / zig-zag (ring)", 20, 92);
   textAlign(CENTER, CENTER);
 
   if (hitMessageFrames > 0) {
@@ -202,20 +207,28 @@ void drawPlaying() {
 
 /**
  * Create one new alien just outside the screen and add it to the ArrayList.
+ * Randomly chooses a subclass so the list holds mixed Obstacle types.
  */
 void spawnAlienAtEdge() {
   if (aliens.size() >= MAX_ALIENS) return;
 
   float sz = random(48, 70);
-  float spd = random(1.6, 3.0);
-  boolean useGreen = random(1) < 0.5;
-  color c = useGreen ? color(120, 220, 120) : color(220, 120, 255);
-  PImage sprite = useGreen ? imgAlienGreen : imgAlienPurple;
+  float roll = random(1);
+  Obstacle alien;
 
-  // Temporary position; respawnAtEdge sets the real edge spawn
-  Obstacle alien = new Obstacle(0, 0, sz, spd, c, sprite);
+  if (roll < 0.35) {
+    // Fast orange hunter
+    alien = new FastObstacle(0, 0, sz * 0.9, imgAlienOrange);
+  } else if (roll < 0.65) {
+    // Zig-zag purple mover
+    alien = new MovingObstacle(0, 0, sz, imgAlienPurple);
+  } else {
+    // Normal green wanderer
+    alien = new Obstacle(0, 0, sz, random(1.6, 3.0), color(120, 220, 120), imgAlienGreen);
+  }
+
   alien.respawnAtEdge();
-  aliens.add(alien);
+  aliens.add(alien);  // polymorphism: subclass stored as Obstacle
 }
 
 /**
@@ -271,17 +284,22 @@ void restartGame() {
   // Clear old list, then seed with at least two visible aliens
   aliens.clear();
 
+  // Seed with different subclasses so inheritance is visible immediately
   Obstacle a1 = new Obstacle(180, 140, 56, 2.2, color(120, 220, 120), imgAlienGreen);
   a1.placeOnScreen(180, 140);
   aliens.add(a1);
 
-  Obstacle a2 = new Obstacle(width - 180, height - 160, 64, 1.8, color(220, 120, 255), imgAlienPurple);
-  a2.placeOnScreen(width - 180, height - 160);
+  FastObstacle a2 = new FastObstacle(width - 200, 160, 50, imgAlienOrange);
+  a2.placeOnScreen(width - 200, 160);
   aliens.add(a2);
+
+  MovingObstacle a3 = new MovingObstacle(width / 2, height - 140, 58, imgAlienPurple);
+  a3.placeOnScreen(width / 2, height - 140);
+  aliens.add(a3);
 
   framesUntilSpawn = SPAWN_INTERVAL_MIN;
   gameState = STATE_PLAYING;
-  println("Restarted — Phase 5 ArrayList active, aliens=" + aliens.size());
+  println("Restarted — Phase 6 inheritance active, aliens=" + aliens.size());
 }
 
 void clearHoldKeys() {

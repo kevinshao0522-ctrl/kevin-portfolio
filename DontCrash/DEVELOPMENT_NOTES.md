@@ -37,12 +37,17 @@ arrow keys move aliens/background the opposite way; shooting comes later.
 - **Techniques used:** `dist()`, boolean method return, invulnerability timer, game state transition, on-screen feedback.
 - **Code location:** `Player.pde` (`checkCollision`), `Obstacle.pde` (`getCollisionRadius`), `DontCrash.pde` (`handleCollisionWith`, `drawGameOver`, `restartGame`)
 
-### Phase 5 — Dynamic obstacles / ArrayList (current)
+### Phase 5 — Dynamic obstacles / ArrayList
 - **Date:** 2026-11-09 (Asia/Shanghai)
 - **What was done:** Replaced fixed `alien1`/`alien2` with `ArrayList<Obstacle>`. Timed spawning adds new aliens; off-screen and hit aliens are `remove`d from the list. Added `PImage` sprites in `data/alien_green.png` and `data/alien_purple.png`.
 - **Techniques used:** `ArrayList`, `add`/`get`/`remove`/`clear`, reverse-index loop for safe deletion, `loadImage`/`image`, spawn timer, max-count cap.
 - **Code location:** `DontCrash.pde` (`aliens`, `spawnAlienAtEdge`, `drawPlaying`), `Obstacle.pde` (PImage display; update no longer self-respawns), `data/*.png`
 
-### Phase 6 — Inheritance (not started)
+### Phase 6 — Inheritance (current)
+- **Date:** 2026-11-09 (Asia/Shanghai)
+- **What was done:** Added `FastObstacle` and `MovingObstacle` subclasses with overridden `update()`/`display()`. Spawn mixes types into `ArrayList<Obstacle>`. Player `facing` rotates with arrow keys while position stays centred. Added `data/alien_orange.png`.
+- **Techniques used:** `extends`, `@Override`, method overriding, polymorphism via ArrayList, `rotate()` for ship facing.
+- **Code location:** `FastObstacle.pde`, `MovingObstacle.pde`, `Player.pde` (`updateFacing`), `DontCrash.pde` (`spawnAlienAtEdge`)
+
 ### Phase 7 — Animation, polymorphism, high scores (not started)
 ### Phase 8 — Interface/abstract class, explosion (not started)
