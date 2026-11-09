@@ -1,10 +1,11 @@
 /**
  * Don't Crash!! — Star Wars theme (Scheme A)
  *
- * Phase 4:
- * - Player.checkCollision(Obstacle)
- * - Obvious response: lives down, flash message, alien respawns
- * - GAME_OVER when lives reach 0
+ * Phase 5:
+ * - ArrayList manages all aliens
+ * - New aliens spawn over time
+ * - Off-screen / hit aliens are removed from the list (no leftover objects)
+ * - PImage sprites for aliens (data/alien_*.png)
  */
 
 // ---------- Game states ----------
@@ -16,23 +17,30 @@ int gameState = STATE_START;
 
 // ---------- Game entities ----------
 Player player;
-Obstacle alien1;
-Obstacle alien2;
 
-// ---------- Keyboard push (Phase 3) ----------
+// Phase 5: dynamic list instead of fixed alien1 / alien2 variables
+ArrayList<Obstacle> aliens;
+
+// Alien sprites (loaded once in setup)
+PImage imgAlienGreen;
+PImage imgAlienPurple;
+
+// Spawn control
+int framesUntilSpawn = 0;
+final int SPAWN_INTERVAL_MIN = 45;   // ~0.75s
+final int SPAWN_INTERVAL_MAX = 100;  // ~1.7s
+final int MAX_ALIENS = 12;           // soft cap to keep the game readable
+
+// ---------- Keyboard push ----------
 boolean holdLeft = false;
 boolean holdRight = false;
 boolean holdUp = false;
 boolean holdDown = false;
 float pushSpeed = 6.0;
 
-// ---------- Collision feedback (Phase 4) ----------
-// After a hit, briefly ignore new collisions so one overlap
-// does not remove all lives in a few frames.
+// ---------- Collision feedback ----------
 int invulnFrames = 0;
-final int INVULN_DURATION = 90;   // ~1.5 seconds at 60fps
-
-// On-screen collision message timer
+final int INVULN_DURATION = 90;
 int hitMessageFrames = 0;
 String hitMessage = "";
 
@@ -45,10 +53,14 @@ float[] starBright = new float[STAR_COUNT];
 void setup() {
   size(1280, 800);
   textAlign(CENTER, CENTER);
+  imageMode(CENTER);
+
+  // Load obstacle images from the data folder (PImage)
+  imgAlienGreen = loadImage("alien_green.png");
+  imgAlienPurple = loadImage("alien_purple.png");
 
   player = new Player();
-  alien1 = new Obstacle(180, 140, 56, 2.2, color(120, 220, 120));
-  alien2 = new Obstacle(1100, 640, 64, 1.8, color(220, 120, 255));
+  aliens = new ArrayList<Obstacle>();
   initStarfield();
 }
 
@@ -107,8 +119,10 @@ void applyArrowPush() {
 
   if (dx == 0 && dy == 0) return;
 
-  alien1.moveBy(dx, dy);
-  alien2.moveBy(dx, dy);
+  // Push EVERY alien in the list the same way
+  for (Obstacle alien : aliens) {
+    alien.moveBy(dx, dy);
+  }
   shiftStarfield(dx, dy);
 }
 
@@ -121,52 +135,64 @@ void drawStartScreen() {
   fill(180);
   text("Star fighter — ship stays centred", width / 2, height / 2 - 10);
   text("Arrow keys push aliens & stars the OPPOSITE way", width / 2, height / 2 + 26);
-  text("Phase 4 — collision & lives", width / 2, height / 2 + 58);
+  text("Phase 5 — ArrayList dynamic aliens", width / 2, height / 2 + 58);
   text("Press ENTER to start", width / 2, height / 2 + 96);
 }
 
 void drawPlaying() {
   applyArrowPush();
 
-  alien1.update();
-  alien2.update();
+  // Spawn new aliens over time
+  framesUntilSpawn--;
+  if (framesUntilSpawn <= 0) {
+    spawnAlienAtEdge();
+    framesUntilSpawn = int(random(SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX));
+  }
 
-  // Count down invulnerability / message timers
+  // Update + remove off-screen aliens (iterate backwards for safe remove)
+  for (int i = aliens.size() - 1; i >= 0; i--) {
+    Obstacle alien = aliens.get(i);
+    alien.update();
+    if (alien.isOffScreen()) {
+      aliens.remove(i);   // free the object from the list
+    }
+  }
+
   if (invulnFrames > 0) invulnFrames--;
   if (hitMessageFrames > 0) hitMessageFrames--;
 
-  // Collision checks (only when not invulnerable)
+  // Collision against every remaining alien
   if (invulnFrames <= 0) {
-    handleCollisionWith(alien1);
-  }
-  if (invulnFrames <= 0) {
-    handleCollisionWith(alien2);
+    for (int i = aliens.size() - 1; i >= 0; i--) {
+      if (handleCollisionWith(aliens.get(i), i)) {
+        break; // one hit per invuln window is enough
+      }
+    }
   }
 
   drawStarfield();
-  alien1.display();
-  alien2.display();
 
-  // Flash the ship while invulnerable
+  for (Obstacle alien : aliens) {
+    alien.display();
+  }
+
   if (invulnFrames <= 0 || (frameCount / 4) % 2 == 0) {
     player.display();
   }
 
-  // Red flash overlay right after a hit
   if (hitMessageFrames > 60) {
     fill(255, 40, 40, 60);
     rect(0, 0, width, height);
   }
 
-  // HUD
   fill(200);
   textSize(16);
   textAlign(LEFT, TOP);
   text("Lives: " + player.lives, 20, 20);
-  text("Arrows: push world opposite | Avoid aliens", 20, 44);
+  text("Aliens: " + aliens.size() + " / " + MAX_ALIENS, 20, 44);
+  text("Arrows: push world opposite | Avoid aliens", 20, 68);
   textAlign(CENTER, CENTER);
 
-  // Collision message
   if (hitMessageFrames > 0) {
     fill(255, 220, 80);
     textSize(36);
@@ -175,15 +201,28 @@ void drawPlaying() {
 }
 
 /**
- * If the player overlaps this alien:
- * - reduce lives
- * - show a clear on-screen message
- * - respawn the alien away from the ship
- * - start a short invulnerability window
- * - go to GAME_OVER when lives hit 0
+ * Create one new alien just outside the screen and add it to the ArrayList.
  */
-void handleCollisionWith(Obstacle alien) {
-  if (!player.checkCollision(alien)) return;
+void spawnAlienAtEdge() {
+  if (aliens.size() >= MAX_ALIENS) return;
+
+  float sz = random(48, 70);
+  float spd = random(1.6, 3.0);
+  boolean useGreen = random(1) < 0.5;
+  color c = useGreen ? color(120, 220, 120) : color(220, 120, 255);
+  PImage sprite = useGreen ? imgAlienGreen : imgAlienPurple;
+
+  // Temporary position; respawnAtEdge sets the real edge spawn
+  Obstacle alien = new Obstacle(0, 0, sz, spd, c, sprite);
+  alien.respawnAtEdge();
+  aliens.add(alien);
+}
+
+/**
+ * @return true if a collision happened and was handled
+ */
+boolean handleCollisionWith(Obstacle alien, int index) {
+  if (!player.checkCollision(alien)) return false;
 
   player.lives--;
   invulnFrames = INVULN_DURATION;
@@ -191,18 +230,22 @@ void handleCollisionWith(Obstacle alien) {
   hitMessage = "CRASH! Lives left: " + player.lives;
   println(hitMessage);
 
-  // Obvious response: remove this alien from the danger zone
-  alien.respawnAtEdge();
+  // Remove the alien from memory/list instead of keeping it around
+  aliens.remove(index);
 
   if (player.lives <= 0) {
     gameState = STATE_GAME_OVER;
     clearHoldKeys();
     println("GAME OVER");
   }
+  return true;
 }
 
 void drawGameOver() {
   drawStarfield();
+  for (Obstacle alien : aliens) {
+    alien.display();
+  }
   player.display();
 
   fill(0, 0, 0, 160);
@@ -218,21 +261,27 @@ void drawGameOver() {
   text("Press ENTER to restart", width / 2, height / 2 + 56);
 }
 
-/** Reset lives / aliens / timers for a fresh run. */
 void restartGame() {
   player.lives = 3;
   invulnFrames = 0;
   hitMessageFrames = 0;
   hitMessage = "";
-
-  // Put aliens ON SCREEN immediately (not only at the outer edge),
-  // so the player can see them as soon as the run starts.
-  alien1.placeOnScreen(180, 140);
-  alien2.placeOnScreen(width - 180, height - 160);
-
   clearHoldKeys();
+
+  // Clear old list, then seed with at least two visible aliens
+  aliens.clear();
+
+  Obstacle a1 = new Obstacle(180, 140, 56, 2.2, color(120, 220, 120), imgAlienGreen);
+  a1.placeOnScreen(180, 140);
+  aliens.add(a1);
+
+  Obstacle a2 = new Obstacle(width - 180, height - 160, 64, 1.8, color(220, 120, 255), imgAlienPurple);
+  a2.placeOnScreen(width - 180, height - 160);
+  aliens.add(a2);
+
+  framesUntilSpawn = SPAWN_INTERVAL_MIN;
   gameState = STATE_PLAYING;
-  println("Restarted — Phase 4 collision active");
+  println("Restarted — Phase 5 ArrayList active, aliens=" + aliens.size());
 }
 
 void clearHoldKeys() {

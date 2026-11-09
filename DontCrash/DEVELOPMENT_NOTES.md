@@ -31,13 +31,18 @@ arrow keys move aliens/background the opposite way; shooting comes later.
 - **Techniques used:** `keyCode` (LEFT/RIGHT/UP/DOWN), `keyPressed`/`keyReleased`, boolean hold flags, opposite-direction delta, `Obstacle.moveBy()`, starfield wrap.
 - **Code location:** `DontCrash.pde` — `applyArrowPush()`, `shiftStarfield()`, `keyPressed()`, `keyReleased()`
 
-### Phase 4 — Collision detection (current)
+### Phase 4 — Collision detection
 - **Date:** 2026-11-09 (Asia/Shanghai)
 - **What was done:** Implemented `boolean checkCollision(Obstacle obstacle)` on `Player` (circle vs circle with `dist()`). On hit: lose a life, show "CRASH!" message, red flash, blink invulnerability, respawn alien. Lives 0 → `GAME_OVER`; ENTER restarts. Fixed a bug where `respawnAtEdge()` + tight `isOffScreen()` caused aliens to reset every frame and never appear; start-of-run now uses `placeOnScreen()`.
 - **Techniques used:** `dist()`, boolean method return, invulnerability timer, game state transition, on-screen feedback.
 - **Code location:** `Player.pde` (`checkCollision`), `Obstacle.pde` (`getCollisionRadius`), `DontCrash.pde` (`handleCollisionWith`, `drawGameOver`, `restartGame`)
 
-### Phase 5 — Dynamic obstacles / ArrayList (not started)
+### Phase 5 — Dynamic obstacles / ArrayList (current)
+- **Date:** 2026-11-09 (Asia/Shanghai)
+- **What was done:** Replaced fixed `alien1`/`alien2` with `ArrayList<Obstacle>`. Timed spawning adds new aliens; off-screen and hit aliens are `remove`d from the list. Added `PImage` sprites in `data/alien_green.png` and `data/alien_purple.png`.
+- **Techniques used:** `ArrayList`, `add`/`get`/`remove`/`clear`, reverse-index loop for safe deletion, `loadImage`/`image`, spawn timer, max-count cap.
+- **Code location:** `DontCrash.pde` (`aliens`, `spawnAlienAtEdge`, `drawPlaying`), `Obstacle.pde` (PImage display; update no longer self-respawns), `data/*.png`
+
 ### Phase 6 — Inheritance (not started)
 ### Phase 7 — Animation, polymorphism, high scores (not started)
 ### Phase 8 — Interface/abstract class, explosion (not started)
