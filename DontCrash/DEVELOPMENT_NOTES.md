@@ -18,14 +18,19 @@ arrow keys move aliens/background the opposite way; shooting comes later.
 - **Techniques used:** `setup()`, `draw()`, `size()`, `background()`, `text()`, `switch`, `keyPressed()`.
 - **Code location:** `DontCrash/DontCrash.pde`
 
-### Phase 2 — Player & Obstacle (current)
+### Phase 2 — Player & Obstacle
 - **Date:** 2026-11-09 (Asia/Shanghai)
 - **What was done:** Added `Player` (centred spaceship) and `Obstacle` (alien). Created two alien objects on the PLAYING screen. Added a simple static starfield. Window enlarged to 1280×800. Aliens move on their own with random wandering (`heading`, `turnSpeed`, Perlin `noise`), occasional soft bias toward centre, variable speed, and random-edge respawn.
 - **Techniques used:** classes, constructors, encapsulation fields, `pushMatrix()`/`popMatrix()`, `triangle()`, `ellipse()`, arrays for stars, `atan2` / angle lerp, Perlin `noise()`, per-frame `update()` loop.
 - **Screenshot:** (add when you run it locally)
 - **Code location:** `Player.pde`, `Obstacle.pde`, `DontCrash.pde` (`drawPlaying()`)
 
-### Phase 3 — Keyboard controls (not started)
+### Phase 3 — Keyboard controls (current)
+- **Date:** 2026-11-09 (Asia/Shanghai)
+- **What was done:** Arrow keys push all aliens and the starfield in the opposite direction while the ship stays centred. Hold flags + `keyPressed`/`keyReleased` support continuous steering. Stars wrap around the screen.
+- **Techniques used:** `keyCode` (LEFT/RIGHT/UP/DOWN), `keyPressed`/`keyReleased`, boolean hold flags, opposite-direction delta, `Obstacle.moveBy()`, starfield wrap.
+- **Code location:** `DontCrash.pde` — `applyArrowPush()`, `shiftStarfield()`, `keyPressed()`, `keyReleased()`
+
 ### Phase 4 — Collision detection (not started)
 ### Phase 5 — Dynamic obstacles / ArrayList (not started)
 ### Phase 6 — Inheritance (not started)
