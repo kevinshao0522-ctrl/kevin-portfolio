@@ -1,22 +1,16 @@
 /**
- * Obstacle — base class for aliens / hazards.
+ * Obstacle — base alien class (extends abstract WorldObject).
  *
- * Phase 5:
- * - Independent random wandering (still)
- * - Optional PImage for graphic
- * - update() only moves — removal is handled by the ArrayList in the main sketch
- *   (avoids keeping unused objects in memory)
+ * Implements GameEntity via WorldObject.
+ * Subclasses FastObstacle / MovingObstacle override update/display.
  */
-class Obstacle {
-  float x;
-  float y;
-  float size;
+class Obstacle extends WorldObject {
   float speed;
   float currentSpeed;
   float vx;
   float vy;
   color bodyColor;
-  PImage img;              // null => fall back to shape drawing
+  PImage img;
 
   float heading;
   float turnSpeed;
@@ -29,9 +23,7 @@ class Obstacle {
   }
 
   Obstacle(float startX, float startY, float obstacleSize, float moveSpeed, color c, PImage sprite) {
-    x = startX;
-    y = startY;
-    size = obstacleSize;
+    super(startX, startY, obstacleSize);
     speed = moveSpeed;
     currentSpeed = moveSpeed;
     bodyColor = c;
@@ -55,10 +47,6 @@ class Obstacle {
     vy = sin(heading) * currentSpeed;
   }
 
-  /**
-   * Move only. Do NOT respawn here.
-   * The main sketch removes off-screen aliens from the ArrayList.
-   */
   void update() {
     framesUntilTurn--;
     if (framesUntilTurn <= 0) {
@@ -84,7 +72,6 @@ class Obstacle {
     return from + diff * amt;
   }
 
-  /** Place just outside a random edge, flying inward. */
   void respawnAtEdge() {
     int side = int(random(4));
     float margin = size + 10;
@@ -123,7 +110,6 @@ class Obstacle {
     pushMatrix();
     translate(x, y);
 
-    // Phase 7: lightweight pulse animation (each alien phases differently)
     float pulse = 1.0 + 0.07 * sin(frameCount * 0.18 + x * 0.02);
     scale(pulse);
 
@@ -131,7 +117,6 @@ class Obstacle {
       imageMode(CENTER);
       image(img, 0, 0, size, size);
     } else {
-      // Fallback shapes if image failed to load
       noStroke();
       fill(bodyColor);
       ellipse(0, 0, size, size * 0.75);
@@ -146,22 +131,12 @@ class Obstacle {
     popMatrix();
   }
 
-  void moveBy(float dx, float dy) {
-    x += dx;
-    y += dy;
-  }
-
-  /**
-   * Far outside the window — larger than respawn margin so edge-spawned
-   * aliens can travel onto the screen before being removed.
-   */
-  boolean isOffScreen() {
-    float margin = size + 120;
-    return (x < -margin || x > width + margin ||
-            y < -margin || y > height + margin);
-  }
-
   float getCollisionRadius() {
     return size * 0.4;
+  }
+
+  /** Obstacles are removed by the main list, not via isFinished(). */
+  boolean isFinished() {
+    return false;
   }
 }

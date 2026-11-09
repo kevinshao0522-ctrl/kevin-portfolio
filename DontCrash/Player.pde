@@ -2,10 +2,9 @@
  * Player — the player's spaceship.
  *
  * Stays FIXED at the screen centre.
- * Phase 6: facing changes with arrow keys.
- * Phase 7: simple engine animation sequence (frame-based).
+ * Implements GameEntity so most entities share one polymorphic API (Phase 8).
  */
-class Player {
+class Player implements GameEntity {
   float x;
   float y;
   float bodySize;
@@ -56,6 +55,11 @@ class Player {
     }
   }
 
+  /** GameEntity.update — advance facing-independent animation. */
+  void update() {
+    updateAnimation();
+  }
+
   /** Advance the engine flame animation sequence. */
   void updateAnimation() {
     animTimer++;
@@ -63,6 +67,14 @@ class Player {
       animTimer = 0;
       animFrame = (animFrame + 1) % ANIM_COUNT;
     }
+  }
+
+  void moveBy(float dx, float dy) {
+    // Ship stays centred — intentionally ignore world push.
+  }
+
+  boolean isFinished() {
+    return false;
   }
 
   void display() {

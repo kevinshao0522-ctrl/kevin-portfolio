@@ -1,11 +1,10 @@
 /**
  * Don't Crash!! — Star Wars theme (Scheme A)
  *
- * Phase 7:
- * - Animation sequences (player engines + alien pulse)
- * - Polymorphism via ArrayList<Obstacle> (mixed subclasses)
- * - High score file save/load (saveStrings / loadStrings)
- * - Survival scoring
+ * Phase 8 (80%+):
+ * - GameEntity interface + WorldObject abstract class
+ * - Explosion collision animation while game continues
+ * - Polymorphism across most entities
  */
 
 // ---------- Game states ----------
@@ -21,6 +20,9 @@ ScoreManager scores;
 
 ArrayList<Obstacle> aliens;
 ArrayList<HealthPack> healthPacks;
+
+// Polymorphic effects list (Explosions implement GameEntity)
+ArrayList<GameEntity> effects;
 
 int framesUntilHealthSpawn = 0;
 final int HEALTH_SPAWN_MIN = 240;
@@ -65,6 +67,7 @@ void setup() {
   scores = new ScoreManager();   // loads highscore.txt
   aliens = new ArrayList<Obstacle>();
   healthPacks = new ArrayList<HealthPack>();
+  effects = new ArrayList<GameEntity>();
   initStarfield();
 }
 
@@ -129,6 +132,10 @@ void applyArrowPush() {
   for (HealthPack pack : healthPacks) {
     pack.moveBy(dx, dy);
   }
+  // Explosions (and any other GameEntity effects) shift with the world
+  for (GameEntity e : effects) {
+    e.moveBy(dx, dy);
+  }
   shiftStarfield(dx, dy);
 }
 
@@ -141,7 +148,7 @@ void drawStartScreen() {
   fill(180);
   text("Star fighter — ship stays centred", width / 2, height / 2 - 20);
   text("Arrow keys push the world the OPPOSITE way", width / 2, height / 2 + 14);
-  text("Phase 7 — animation + high score file", width / 2, height / 2 + 46);
+  text("Phase 8 — interface / abstract class / explosions", width / 2, height / 2 + 46);
 
   fill(255, 220, 100);
   text("High Score: " + scores.highScore, width / 2, height / 2 + 86);
@@ -153,7 +160,7 @@ void drawStartScreen() {
 void drawPlaying() {
   applyArrowPush();
   player.updateFacing(holdLeft, holdRight, holdUp, holdDown);
-  player.updateAnimation();
+  player.update();   // GameEntity animation tick
   scores.updateSurvivalScore();
 
   framesUntilSpawn--;
@@ -168,7 +175,7 @@ void drawPlaying() {
     framesUntilHealthSpawn = int(random(HEALTH_SPAWN_MIN, HEALTH_SPAWN_MAX));
   }
 
-  // Polymorphism: same update()/display() call, different subclass behaviour
+  // Polymorphism: Obstacle subclasses via ArrayList<Obstacle>
   for (int i = aliens.size() - 1; i >= 0; i--) {
     Obstacle alien = aliens.get(i);
     alien.update();
@@ -178,8 +185,19 @@ void drawPlaying() {
   }
 
   for (int i = healthPacks.size() - 1; i >= 0; i--) {
-    if (healthPacks.get(i).isOffScreen()) {
+    HealthPack pack = healthPacks.get(i);
+    pack.update();
+    if (pack.isOffScreen()) {
       healthPacks.remove(i);
+    }
+  }
+
+  // Polymorphism: GameEntity effects (explosions) — game keeps running
+  for (int i = effects.size() - 1; i >= 0; i--) {
+    GameEntity e = effects.get(i);
+    e.update();
+    if (e.isFinished()) {
+      effects.remove(i);
     }
   }
 
@@ -204,6 +222,9 @@ void drawPlaying() {
   for (Obstacle alien : aliens) {
     alien.display();
   }
+  for (GameEntity e : effects) {
+    e.display();
+  }
 
   if (invulnFrames <= 0 || (frameCount / 4) % 2 == 0) {
     player.display();
@@ -221,7 +242,7 @@ void drawPlaying() {
   text("Score: " + scores.currentScore, 20, 44);
   text("High: " + scores.highScore, 20, 68);
   text("Aliens: " + aliens.size() + " / " + MAX_ALIENS, 20, 92);
-  text("Green + heal (max 3) | survive to score", 20, 116);
+  text("Green + heal (max 3) | crash = explosion", 20, 116);
   textAlign(CENTER, CENTER);
 
   if (hitMessageFrames > 0) {
@@ -288,6 +309,8 @@ boolean handleCollisionWith(Obstacle alien, int index) {
   hitMessage = "CRASH! Lives left: " + player.lives;
   println(hitMessage);
 
+  // Phase 8: spawn explosion animation; game continues while it plays
+  effects.add(new Explosion(alien.x, alien.y));
   aliens.remove(index);
 
   if (player.lives <= 0) {
@@ -311,6 +334,9 @@ void drawGameOver() {
   }
   for (Obstacle alien : aliens) {
     alien.display();
+  }
+  for (GameEntity e : effects) {
+    e.display();
   }
   player.display();
 
@@ -347,6 +373,7 @@ void restartGame() {
 
   aliens.clear();
   healthPacks.clear();
+  effects.clear();
 
   Obstacle a1 = new Obstacle(180, 140, 56, 2.2, color(120, 220, 120), imgAlienGreen);
   a1.placeOnScreen(180, 140);
@@ -365,7 +392,7 @@ void restartGame() {
   framesUntilSpawn = SPAWN_INTERVAL_MIN;
   framesUntilHealthSpawn = HEALTH_SPAWN_MIN;
   gameState = STATE_PLAYING;
-  println("Restarted — Phase 7 scoring/animation active");
+  println("Restarted — Phase 8 explosions + GameEntity active");
 }
 
 void clearHoldKeys() {

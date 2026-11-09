@@ -55,11 +55,16 @@ arrow keys move aliens/background the opposite way; shooting comes later.
 - **Techniques used:** new class, `ArrayList<HealthPack>`, `Player.heal()`, spawn away from centre.
 - **Code location:** `HealthPack.pde`, `Player.heal()`, `DontCrash.pde` (`spawnHealthPack`, `handleHealthPickups`)
 
-### Phase 7 — Animation, polymorphism, high scores (current)
+### Phase 7 — Animation, polymorphism, high scores
 - **Date:** 2026-11-09 (Asia/Shanghai)
 - **What was done:** Player engine flame animation sequence; alien pulse scale animation. Survival score (+1/sec) and heal bonus. `ScoreManager` loads/saves `highscore.txt` with `loadStrings`/`saveStrings`. ArrayList polymorphism call path kept/emphasized.
 - **Techniques used:** frame-index animation, `saveStrings`/`loadStrings`, scoring, file I/O, polymorphism via `Obstacle` list.
 - **Code location:** `ScoreManager.pde`, `Player.updateAnimation()`, `Obstacle.display()` pulse, `DontCrash.pde` (`endRun`, HUD score)
 
-### Phase 8 — Interface/abstract class, explosion (not started)
+### Phase 8 — Interface/abstract class, explosion (current)
+- **Date:** 2026-11-09 (Asia/Shanghai)
+- **What was done:** Added `GameEntity` interface and abstract `WorldObject`. `Obstacle`, `HealthPack`, `Explosion` extend `WorldObject`; `Player` implements `GameEntity`. Crash spawns `Explosion` animation that plays briefly while gameplay continues; finished explosions are removed from `ArrayList<GameEntity> effects`.
+- **Techniques used:** `interface`, `abstract class`, polymorphism across entities, short-lived VFX while game loop continues.
+- **Code location:** `GameEntity.pde`, `WorldObject.pde`, `Explosion.pde`, `DontCrash.pde` (`effects`, `handleCollisionWith`)
+
 

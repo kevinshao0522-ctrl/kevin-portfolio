@@ -1,36 +1,30 @@
 /**
  * HealthPack — healing pickup (+1 life, capped at 3).
  *
- * After spawning, it does NOT wander by itself.
- * It only shifts when the player pushes the world with arrow keys
- * (same reverse-control model as aliens / stars).
+ * Extends WorldObject / implements GameEntity.
+ * Does NOT self-move; only shifts with arrow-key world push.
  */
-class HealthPack {
-  float x;
-  float y;
-  float size;
+class HealthPack extends WorldObject {
 
   HealthPack(float startX, float startY) {
-    x = startX;
-    y = startY;
-    size = 36;
+    super(startX, startY, 36);
   }
 
-  void moveBy(float dx, float dy) {
-    x += dx;
-    y += dy;
+  void update() {
+    // Stationary: intentional no-op (still participates in GameEntity polymorphism)
   }
 
   void display() {
     pushMatrix();
     translate(x, y);
 
-    // Soft glow
+    float pulse = 1.0 + 0.08 * sin(frameCount * 0.15);
+    scale(pulse);
+
     noStroke();
     fill(80, 255, 140, 70);
     ellipse(0, 0, size * 1.6, size * 1.6);
 
-    // Green capsule / cross
     fill(40, 200, 100);
     ellipse(0, 0, size, size);
     fill(255);
@@ -45,11 +39,5 @@ class HealthPack {
   boolean touchesPlayer(Player p) {
     float distance = dist(x, y, p.x, p.y);
     return distance < (size * 0.45 + p.getCollisionRadius());
-  }
-
-  boolean isOffScreen() {
-    float margin = size + 120;
-    return (x < -margin || x > width + margin ||
-            y < -margin || y > height + margin);
   }
 }
