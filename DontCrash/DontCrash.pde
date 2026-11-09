@@ -270,11 +270,8 @@ void drawPlaying() {
   fill(200);
   textSize(16);
   textAlign(LEFT, TOP);
-  text("Lives: " + player.lives, 20, 20);
-  text("Score: " + scores.currentScore, 20, 44);
-  text("High: " + scores.highScore, 20, 68);
-  text("Aliens: " + aliens.size() + " / " + MAX_ALIENS, 20, 92);
-  text("SPACE shoot | Green + heal | crash = explosion", 20, 116);
+  text("生命值: " + player.lives, 20, 20);
+  text("分数: " + scores.currentScore, 20, 44);
   textAlign(CENTER, CENTER);
 
   if (hitMessageFrames > 0) {
