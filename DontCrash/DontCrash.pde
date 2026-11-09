@@ -24,6 +24,12 @@ ArrayList<HealthPack> healthPacks;
 // Polymorphic effects list (Explosions implement GameEntity)
 ArrayList<GameEntity> effects;
 
+// Player lasers (SPACE to fire)
+ArrayList<Bullet> bullets;
+int fireCooldown = 0;
+final int FIRE_COOLDOWN_FRAMES = 12;  // ~5 shots/sec
+final float BULLET_SPEED = 14;
+
 int framesUntilHealthSpawn = 0;
 final int HEALTH_SPAWN_MIN = 240;
 final int HEALTH_SPAWN_MAX = 420;
@@ -68,6 +74,7 @@ void setup() {
   aliens = new ArrayList<Obstacle>();
   healthPacks = new ArrayList<HealthPack>();
   effects = new ArrayList<GameEntity>();
+  bullets = new ArrayList<Bullet>();
   initStarfield();
 }
 
@@ -136,6 +143,9 @@ void applyArrowPush() {
   for (GameEntity e : effects) {
     e.moveBy(dx, dy);
   }
+  for (Bullet b : bullets) {
+    b.moveBy(dx, dy);
+  }
   shiftStarfield(dx, dy);
 }
 
@@ -147,8 +157,8 @@ void drawStartScreen() {
   textSize(20);
   fill(180);
   text("Star fighter — ship stays centred", width / 2, height / 2 - 20);
-  text("Arrow keys push the world the OPPOSITE way", width / 2, height / 2 + 14);
-  text("Phase 8 — interface / abstract class / explosions", width / 2, height / 2 + 46);
+  text("Arrows: push world opposite | SPACE: shoot", width / 2, height / 2 + 14);
+  text("Phase 8+ — lasers + explosions", width / 2, height / 2 + 46);
 
   fill(255, 220, 100);
   text("High Score: " + scores.highScore, width / 2, height / 2 + 86);
@@ -201,6 +211,31 @@ void drawPlaying() {
     }
   }
 
+  // Update lasers + bullet-vs-alien hits
+  if (fireCooldown > 0) fireCooldown--;
+  for (int i = bullets.size() - 1; i >= 0; i--) {
+    Bullet b = bullets.get(i);
+    b.update();
+    if (b.isFinished()) {
+      bullets.remove(i);
+      continue;
+    }
+    // Check hit against every alien
+    for (int j = aliens.size() - 1; j >= 0; j--) {
+      Obstacle alien = aliens.get(j);
+      if (b.hits(alien)) {
+        effects.add(new Explosion(alien.x, alien.y));
+        scores.addBonus(10);
+        hitMessageFrames = 45;
+        hitMessage = "HIT! +10";
+        aliens.remove(j);
+        b.markDead();
+        bullets.remove(i);
+        break;
+      }
+    }
+  }
+
   if (invulnFrames > 0) invulnFrames--;
   if (hitMessageFrames > 0) hitMessageFrames--;
 
@@ -222,6 +257,9 @@ void drawPlaying() {
   for (Obstacle alien : aliens) {
     alien.display();
   }
+  for (Bullet b : bullets) {
+    b.display();
+  }
   for (GameEntity e : effects) {
     e.display();
   }
@@ -242,7 +280,7 @@ void drawPlaying() {
   text("Score: " + scores.currentScore, 20, 44);
   text("High: " + scores.highScore, 20, 68);
   text("Aliens: " + aliens.size() + " / " + MAX_ALIENS, 20, 92);
-  text("Green + heal (max 3) | crash = explosion", 20, 116);
+  text("SPACE shoot | Green + heal | crash = explosion", 20, 116);
   textAlign(CENTER, CENTER);
 
   if (hitMessageFrames > 0) {
@@ -335,6 +373,9 @@ void drawGameOver() {
   for (Obstacle alien : aliens) {
     alien.display();
   }
+  for (Bullet b : bullets) {
+    b.display();
+  }
   for (GameEntity e : effects) {
     e.display();
   }
@@ -374,6 +415,8 @@ void restartGame() {
   aliens.clear();
   healthPacks.clear();
   effects.clear();
+  bullets.clear();
+  fireCooldown = 0;
 
   Obstacle a1 = new Obstacle(180, 140, 56, 2.2, color(120, 220, 120), imgAlienGreen);
   a1.placeOnScreen(180, 140);
@@ -392,7 +435,17 @@ void restartGame() {
   framesUntilSpawn = SPAWN_INTERVAL_MIN;
   framesUntilHealthSpawn = HEALTH_SPAWN_MIN;
   gameState = STATE_PLAYING;
-  println("Restarted — Phase 8 explosions + GameEntity active");
+  println("Restarted — SPACE shooting enabled");
+}
+
+/** Fire one laser from the ship nose along current facing. */
+void tryFireBullet() {
+  if (fireCooldown > 0) return;
+
+  float noseX = player.x + cos(player.facing) * player.bodySize * 0.55;
+  float noseY = player.y + sin(player.facing) * player.bodySize * 0.55;
+  bullets.add(new Bullet(noseX, noseY, player.facing, BULLET_SPEED));
+  fireCooldown = FIRE_COOLDOWN_FRAMES;
 }
 
 void clearHoldKeys() {
@@ -415,6 +468,11 @@ void keyPressed() {
   if (keyCode == RIGHT) holdRight = true;
   if (keyCode == UP)    holdUp = true;
   if (keyCode == DOWN)  holdDown = true;
+
+  // SPACE fires a laser in the facing direction
+  if (key == ' ') {
+    tryFireBullet();
+  }
 }
 
 void keyReleased() {

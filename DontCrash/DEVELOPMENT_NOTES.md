@@ -61,10 +61,17 @@ arrow keys move aliens/background the opposite way; shooting comes later.
 - **Techniques used:** frame-index animation, `saveStrings`/`loadStrings`, scoring, file I/O, polymorphism via `Obstacle` list.
 - **Code location:** `ScoreManager.pde`, `Player.updateAnimation()`, `Obstacle.display()` pulse, `DontCrash.pde` (`endRun`, HUD score)
 
-### Phase 8 — Interface/abstract class, explosion (current)
+### Phase 8 — Interface/abstract class, explosion
 - **Date:** 2026-11-09 (Asia/Shanghai)
 - **What was done:** Added `GameEntity` interface and abstract `WorldObject`. `Obstacle`, `HealthPack`, `Explosion` extend `WorldObject`; `Player` implements `GameEntity`. Crash spawns `Explosion` animation that plays briefly while gameplay continues; finished explosions are removed from `ArrayList<GameEntity> effects`.
 - **Techniques used:** `interface`, `abstract class`, polymorphism across entities, short-lived VFX while game loop continues.
 - **Code location:** `GameEntity.pde`, `WorldObject.pde`, `Explosion.pde`, `DontCrash.pde` (`effects`, `handleCollisionWith`)
+
+### Phase 8+ — SPACE shooting
+- **Date:** 2026-11-09 (Asia/Shanghai)
+- **What was done:** Added `Bullet` lasers fired with SPACE along player facing. Hits destroy aliens (+10 score) and spawn explosions. Fire cooldown prevents spam.
+- **Techniques used:** `key == ' '`, projectile list, bullet-obstacle collision, cooldown timer.
+- **Code location:** `Bullet.pde`, `DontCrash.pde` (`tryFireBullet`, bullet update loop)
+
 
 
