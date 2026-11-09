@@ -20,8 +20,8 @@ arrow keys move aliens/background the opposite way; shooting comes later.
 
 ### Phase 2 — Player & Obstacle (current)
 - **Date:** 2026-11-09 (Asia/Shanghai)
-- **What was done:** Added `Player` (centred spaceship) and `Obstacle` (alien). Created two alien objects on the PLAYING screen. Added a simple static starfield.
-- **Techniques used:** classes, constructors, encapsulation fields, `pushMatrix()`/`popMatrix()`, `triangle()`, `ellipse()`, arrays for stars.
+- **What was done:** Added `Player` (centred spaceship) and `Obstacle` (alien). Created two alien objects on the PLAYING screen. Added a simple static starfield. Window enlarged to 1280×800. Aliens now move on their own toward the centre via `vx`/`vy` + `update()`, and respawn from a random edge when off-screen.
+- **Techniques used:** classes, constructors, encapsulation fields, `pushMatrix()`/`popMatrix()`, `triangle()`, `ellipse()`, arrays for stars, `atan2` for aiming, per-frame `update()` loop.
 - **Screenshot:** (add when you run it locally)
 - **Code location:** `Player.pde`, `Obstacle.pde`, `DontCrash.pde` (`drawPlaying()`)
 

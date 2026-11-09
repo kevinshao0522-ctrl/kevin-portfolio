@@ -25,7 +25,7 @@ class Player {
   Player() {
     x = width / 2.0;
     y = height / 2.0;
-    bodySize = 36;
+    bodySize = 48;  // slightly larger for the 1280x800 window
     lives = 3;
   }
 

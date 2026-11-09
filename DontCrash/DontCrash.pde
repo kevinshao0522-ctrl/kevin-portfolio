@@ -3,14 +3,15 @@
  *
  * Movement model:
  * - Player ship stays at the centre forever.
- * - Arrow keys will move aliens + starfield the opposite way (Phase 3),
+ * - Aliens already drift on their own (Phase 2).
+ * - Arrow keys will ADD opposite push to aliens + starfield (Phase 3),
  *   so it FEELS like the ship is flying.
  *
  * Phase 2 goals:
  * - Player class (centred spaceship)
- * - Obstacle class (aliens)
+ * - Obstacle class (aliens) with independent movement
  * - At least two alien objects on screen
- * - Simple starfield background (static for now)
+ * - Larger play window + starfield
  */
 
 // ---------- Game states ----------
@@ -26,22 +27,23 @@ Obstacle alien1;
 Obstacle alien2;
 
 // ---------- Starfield (visual only; will scroll in Phase 3) ----------
-final int STAR_COUNT = 80;
+final int STAR_COUNT = 140;
 float[] starX = new float[STAR_COUNT];
 float[] starY = new float[STAR_COUNT];
 float[] starBright = new float[STAR_COUNT];
 
 void setup() {
-  size(800, 600);
+  // Larger play area for Scheme A space feel
+  size(1280, 800);
   textAlign(CENTER, CENTER);
 
   // Create the fixed player ship at the centre
   player = new Player();
 
   // At least TWO obstacle objects (marking band 40–50%)
-  // Placed away from the centre so you can see them clearly.
-  alien1 = new Obstacle(150, 120, 48, 3.0, color(120, 220, 120));
-  alien2 = new Obstacle(650, 450, 56, 2.5, color(220, 120, 255));
+  // Start near opposite corners; they will drift toward the centre alone.
+  alien1 = new Obstacle(180, 140, 56, 2.2, color(120, 220, 120));
+  alien2 = new Obstacle(1100, 640, 64, 1.8, color(220, 120, 255));
 
   initStarfield();
 }
@@ -83,23 +85,26 @@ void drawStarfield() {
 
 void drawStartScreen() {
   fill(240);
-  textSize(42);
-  text("Don't Crash!!", width / 2, height / 2 - 50);
+  textSize(52);
+  text("Don't Crash!!", width / 2, height / 2 - 60);
 
-  textSize(18);
+  textSize(20);
   fill(180);
   text("Star fighter — stay centred, push aliens away", width / 2, height / 2);
-  text("Phase 2 — Player + two aliens", width / 2, height / 2 + 30);
-  text("Press ENTER to start", width / 2, height / 2 + 60);
+  text("Phase 2 — aliens move on their own", width / 2, height / 2 + 36);
+  text("Press ENTER to start", width / 2, height / 2 + 72);
 }
 
 /**
  * PLAYING screen for Phase 2:
- * draw stars, two aliens, and the centred ship.
- * No keyboard movement yet (that is Phase 3).
+ * aliens update themselves every frame; ship stays fixed at centre.
  */
 void drawPlaying() {
   drawStarfield();
+
+  // Independent movement (no keyboard required)
+  alien1.update();
+  alien2.update();
 
   alien1.display();
   alien2.display();
@@ -107,16 +112,16 @@ void drawPlaying() {
 
   // Simple HUD
   fill(200);
-  textSize(14);
+  textSize(16);
   textAlign(LEFT, TOP);
-  text("Lives: " + player.lives, 16, 16);
-  text("Phase 2: ship fixed at centre (controls next)", 16, 36);
+  text("Lives: " + player.lives, 20, 20);
+  text("Aliens drift alone — arrow controls come in Phase 3", 20, 44);
   textAlign(CENTER, CENTER);
 }
 
 void keyPressed() {
   if (gameState == STATE_START && (key == ENTER || key == RETURN)) {
     gameState = STATE_PLAYING;
-    println("Entered PLAYING — Phase 2: player + 2 aliens visible");
+    println("Entered PLAYING — Phase 2: auto-moving aliens");
   }
 }

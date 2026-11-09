@@ -1,20 +1,22 @@
 /**
  * Obstacle — base class for aliens / hazards.
  *
- * In Scheme A these are alien ships that approach the player.
- * Phase 2: store position/size and draw at least two instances.
- * Phase 3: move opposite to arrow keys.
+ * Scheme A: alien ships that keep moving on their own (even with no key input).
+ * Phase 3 will ADD keyboard push (opposite to arrow keys) on top of this drift.
  * Phase 6+: subclasses (FastObstacle, etc.) will inherit from this class.
  */
 class Obstacle {
   float x;
   float y;
   float size;
-  float speed;   // used from Phase 3 for independent / keyboard movement
+  float speed;      // how fast this alien drifts each frame
+  float vx;         // independent velocity X
+  float vy;         // independent velocity Y
   color bodyColor;
 
   /**
    * Create an alien at a given position.
+   * It immediately aims roughly toward the screen centre (where the player is).
    */
   Obstacle(float startX, float startY, float obstacleSize, float moveSpeed, color c) {
     x = startX;
@@ -22,6 +24,53 @@ class Obstacle {
     size = obstacleSize;
     speed = moveSpeed;
     bodyColor = c;
+    aimTowardCenter();
+  }
+
+  /** Set velocity so the alien flies toward the canvas centre. */
+  void aimTowardCenter() {
+    float cx = width / 2.0;
+    float cy = height / 2.0;
+    float angle = atan2(cy - y, cx - x);
+    // Small random wobble so two aliens do not share one perfect line
+    angle += random(-0.35, 0.35);
+    vx = cos(angle) * speed;
+    vy = sin(angle) * speed;
+  }
+
+  /**
+   * Called every frame: aliens move by themselves (no player input needed).
+   * If they leave the screen, respawn from a random edge and aim inward again.
+   */
+  void update() {
+    x += vx;
+    y += vy;
+
+    if (isOffScreen()) {
+      respawnAtEdge();
+    }
+  }
+
+  /** Place the alien just outside one random edge of the window. */
+  void respawnAtEdge() {
+    int side = int(random(4)); // 0=left, 1=right, 2=top, 3=bottom
+    float margin = size + 10;
+
+    if (side == 0) {
+      x = -margin;
+      y = random(height);
+    } else if (side == 1) {
+      x = width + margin;
+      y = random(height);
+    } else if (side == 2) {
+      x = random(width);
+      y = -margin;
+    } else {
+      x = random(width);
+      y = height + margin;
+    }
+
+    aimTowardCenter();
   }
 
   /**
@@ -58,8 +107,8 @@ class Obstacle {
   }
 
   /**
-   * Move by a delta. Phase 3 will call this when arrow keys are held,
-   * using the OPPOSITE direction to the key pressed.
+   * Extra shift from keyboard (Phase 3).
+   * Independent vx/vy still apply every frame in update().
    */
   void moveBy(float dx, float dy) {
     x += dx;
@@ -68,7 +117,6 @@ class Obstacle {
 
   /**
    * True when the alien is far outside the visible window.
-   * Used later to remove unused objects (Phase 5).
    */
   boolean isOffScreen() {
     float margin = size;
