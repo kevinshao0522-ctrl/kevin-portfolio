@@ -61,10 +61,16 @@ float[] starX = new float[STAR_COUNT];
 float[] starY = new float[STAR_COUNT];
 float[] starBright = new float[STAR_COUNT];
 
+PFont uiFont;  // system font so Chinese HUD text can render
+
 void setup() {
   size(1280, 800);
   textAlign(CENTER, CENTER);
   imageMode(CENTER);
+
+  // Prefer a font that can show 生命值 / 分数 on the player's OS
+  uiFont = createFont("SansSerif", 18);
+  textFont(uiFont);
 
   imgAlienGreen = loadImage("alien_green.png");
   imgAlienPurple = loadImage("alien_purple.png");
