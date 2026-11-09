@@ -1,5 +1,5 @@
 /**
- * Bullet — laser with fixed vx/vy (no cos/sin/rotate).
+ * Bullet — circular laser pulse with fixed vx/vy (no cos/sin/rotate).
  */
 class Bullet extends WorldObject {
   float vx;
@@ -7,7 +7,7 @@ class Bullet extends WorldObject {
   boolean dead;
 
   Bullet(float startX, float startY, float velX, float velY) {
-    super(startX, startY, 10);
+    super(startX, startY, 16);
     vx = velX;
     vy = velY;
     dead = false;
@@ -20,10 +20,15 @@ class Bullet extends WorldObject {
 
   void display() {
     noStroke();
-    fill(120, 220, 255);
-    ellipse(x, y, 18, 8);
+    // Outer glow ring
+    fill(40, 160, 255);
+    ellipse(x, y, size * 1.6, size * 1.6);
+    // Mid laser disc
+    fill(80, 210, 255);
+    ellipse(x, y, size * 1.15, size * 1.15);
+    // Bright core
     fill(220, 250, 255);
-    rect(x - 9, y - 2, 18, 4);
+    ellipse(x, y, size * 0.55, size * 0.55);
   }
 
   boolean hits(Obstacle alien) {
