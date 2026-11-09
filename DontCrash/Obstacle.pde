@@ -1,82 +1,135 @@
 /**
  * Obstacle — base class for aliens / hazards.
  *
- * Scheme A: alien ships that keep moving on their own (even with no key input).
+ * Scheme A: aliens keep moving on their own with RANDOM wandering paths
+ * (not a straight line into the centre every time).
  * Phase 3 will ADD keyboard push (opposite to arrow keys) on top of this drift.
- * Phase 6+: subclasses (FastObstacle, etc.) will inherit from this class.
  */
 class Obstacle {
   float x;
   float y;
   float size;
-  float speed;      // how fast this alien drifts each frame
-  float vx;         // independent velocity X
-  float vy;         // independent velocity Y
+  float speed;       // base speed
+  float currentSpeed;
+  float vx;
+  float vy;
   color bodyColor;
 
-  /**
-   * Create an alien at a given position.
-   * It immediately aims roughly toward the screen centre (where the player is).
-   */
+  // --- Random wander state ---
+  float heading;           // current flight angle in radians
+  float turnSpeed;         // how fast heading changes each frame
+  int framesUntilTurn;     // countdown before picking a new turn style
+  float noiseSeedX;        // unique Perlin noise offset per alien
+  float noiseSeedY;
+
   Obstacle(float startX, float startY, float obstacleSize, float moveSpeed, color c) {
     x = startX;
     y = startY;
     size = obstacleSize;
     speed = moveSpeed;
+    currentSpeed = moveSpeed;
     bodyColor = c;
-    aimTowardCenter();
-  }
 
-  /** Set velocity so the alien flies toward the canvas centre. */
-  void aimTowardCenter() {
-    float cx = width / 2.0;
-    float cy = height / 2.0;
-    float angle = atan2(cy - y, cx - x);
-    // Small random wobble so two aliens do not share one perfect line
-    angle += random(-0.35, 0.35);
-    vx = cos(angle) * speed;
-    vy = sin(angle) * speed;
+    // Each alien gets its own noise seeds so paths differ
+    noiseSeedX = random(1000);
+    noiseSeedY = random(1000);
+
+    // Start facing a random direction (not locked to centre)
+    heading = random(TWO_PI);
+    pickNewTurnBehaviour();
+    applyHeadingToVelocity();
   }
 
   /**
-   * Called every frame: aliens move by themselves (no player input needed).
-   * If they leave the screen, respawn from a random edge and aim inward again.
+   * Choose a new random turning style for a short while.
+   * Sometimes almost straight, sometimes sharp curves.
+   */
+  void pickNewTurnBehaviour() {
+    // Random duration: ~0.5s to ~2s at 60fps
+    framesUntilTurn = int(random(30, 120));
+
+    // Random turn rate (radians per frame)
+    turnSpeed = random(-0.08, 0.08);
+
+    // Occasional "dash": briefly speed up or slow down
+    currentSpeed = speed * random(0.6, 1.5);
+  }
+
+  /** Convert heading + speed into vx/vy. */
+  void applyHeadingToVelocity() {
+    vx = cos(heading) * currentSpeed;
+    vy = sin(heading) * currentSpeed;
+  }
+
+  /**
+   * Every frame: wander randomly using turn + Perlin noise.
+   * Soft bias toward centre only sometimes, so paths stay unpredictable
+   * but aliens still tend to threaten the player over time.
    */
   void update() {
+    framesUntilTurn--;
+    if (framesUntilTurn <= 0) {
+      pickNewTurnBehaviour();
+    }
+
+    // Smooth random wobble from Perlin noise (unique per alien)
+    float noiseTurn = map(noise(noiseSeedX, frameCount * 0.02), 0, 1, -0.05, 0.05);
+    heading += turnSpeed + noiseTurn;
+
+    // ~2% chance each frame: gently nudge toward the player centre
+    // (keeps tension without looking like a locked missile)
+    if (random(1) < 0.02) {
+      float toCenter = atan2(height / 2.0 - y, width / 2.0 - x);
+      heading = lerpAngle(heading, toCenter, random(0.15, 0.45));
+    }
+
+    applyHeadingToVelocity();
     x += vx;
     y += vy;
+
+    // Advance this alien's noise coordinate so the path keeps changing
+    noiseSeedX += 0.01;
 
     if (isOffScreen()) {
       respawnAtEdge();
     }
   }
 
-  /** Place the alien just outside one random edge of the window. */
-  void respawnAtEdge() {
-    int side = int(random(4)); // 0=left, 1=right, 2=top, 3=bottom
-    float margin = size + 10;
-
-    if (side == 0) {
-      x = -margin;
-      y = random(height);
-    } else if (side == 1) {
-      x = width + margin;
-      y = random(height);
-    } else if (side == 2) {
-      x = random(width);
-      y = -margin;
-    } else {
-      x = random(width);
-      y = height + margin;
-    }
-
-    aimTowardCenter();
+  /**
+   * Interpolate angles correctly across the -PI / PI wrap.
+   */
+  float lerpAngle(float from, float to, float amt) {
+    float diff = atan2(sin(to - from), cos(to - from));
+    return from + diff * amt;
   }
 
-  /**
-   * Draw a simple alien (oval body + eyes).
-   * Images (PImage) come in a later band; shapes are enough for Phase 2.
-   */
+  /** Respawn just outside a random edge, flying inward at a random angle. */
+  void respawnAtEdge() {
+    int side = int(random(4));
+    float margin = size + 10;
+
+    if (side == 0) {          // left → fly mostly rightward
+      x = -margin;
+      y = random(height);
+      heading = random(-HALF_PI * 0.7, HALF_PI * 0.7);
+    } else if (side == 1) {   // right → fly mostly leftward
+      x = width + margin;
+      y = random(height);
+      heading = random(PI - HALF_PI * 0.7, PI + HALF_PI * 0.7);
+    } else if (side == 2) {   // top → fly mostly downward
+      x = random(width);
+      y = -margin;
+      heading = random(0.3, PI - 0.3);
+    } else {                  // bottom → fly mostly upward
+      x = random(width);
+      y = height + margin;
+      heading = random(-PI + 0.3, -0.3);
+    }
+
+    pickNewTurnBehaviour();
+    applyHeadingToVelocity();
+  }
+
   void display() {
     pushMatrix();
     translate(x, y);
@@ -85,7 +138,6 @@ class Obstacle {
     fill(bodyColor);
     ellipse(0, 0, size, size * 0.75);
 
-    // Eyes
     fill(255);
     ellipse(-size * 0.18, -size * 0.05, size * 0.22, size * 0.28);
     ellipse(size * 0.18, -size * 0.05, size * 0.22, size * 0.28);
@@ -93,7 +145,6 @@ class Obstacle {
     ellipse(-size * 0.18, -size * 0.05, size * 0.1, size * 0.14);
     ellipse(size * 0.18, -size * 0.05, size * 0.1, size * 0.14);
 
-    // Antenna
     stroke(bodyColor);
     strokeWeight(2);
     line(-size * 0.15, -size * 0.35, -size * 0.25, -size * 0.55);
@@ -106,18 +157,11 @@ class Obstacle {
     popMatrix();
   }
 
-  /**
-   * Extra shift from keyboard (Phase 3).
-   * Independent vx/vy still apply every frame in update().
-   */
   void moveBy(float dx, float dy) {
     x += dx;
     y += dy;
   }
 
-  /**
-   * True when the alien is far outside the visible window.
-   */
   boolean isOffScreen() {
     float margin = size;
     return (x < -margin || x > width + margin ||

@@ -115,7 +115,7 @@ void drawPlaying() {
   textSize(16);
   textAlign(LEFT, TOP);
   text("Lives: " + player.lives, 20, 20);
-  text("Aliens drift alone — arrow controls come in Phase 3", 20, 44);
+  text("Aliens wander randomly — arrow controls come in Phase 3", 20, 44);
   textAlign(CENTER, CENTER);
 }
 
