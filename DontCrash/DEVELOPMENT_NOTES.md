@@ -33,7 +33,7 @@ arrow keys move aliens/background the opposite way; shooting comes later.
 
 ### Phase 4 — Collision detection (current)
 - **Date:** 2026-11-09 (Asia/Shanghai)
-- **What was done:** Implemented `boolean checkCollision(Obstacle obstacle)` on `Player` (circle vs circle with `dist()`). On hit: lose a life, show "CRASH!" message, red flash, blink invulnerability, respawn alien. Lives 0 → `GAME_OVER`; ENTER restarts.
+- **What was done:** Implemented `boolean checkCollision(Obstacle obstacle)` on `Player` (circle vs circle with `dist()`). On hit: lose a life, show "CRASH!" message, red flash, blink invulnerability, respawn alien. Lives 0 → `GAME_OVER`; ENTER restarts. Fixed a bug where `respawnAtEdge()` + tight `isOffScreen()` caused aliens to reset every frame and never appear; start-of-run now uses `placeOnScreen()`.
 - **Techniques used:** `dist()`, boolean method return, invulnerability timer, game state transition, on-screen feedback.
 - **Code location:** `Player.pde` (`checkCollision`), `Obstacle.pde` (`getCollisionRadius`), `DontCrash.pde` (`handleCollisionWith`, `drawGameOver`, `restartGame`)
 

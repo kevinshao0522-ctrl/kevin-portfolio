@@ -224,8 +224,12 @@ void restartGame() {
   invulnFrames = 0;
   hitMessageFrames = 0;
   hitMessage = "";
-  alien1.respawnAtEdge();
-  alien2.respawnAtEdge();
+
+  // Put aliens ON SCREEN immediately (not only at the outer edge),
+  // so the player can see them as soon as the run starts.
+  alien1.placeOnScreen(180, 140);
+  alien2.placeOnScreen(width - 180, height - 160);
+
   clearHoldKeys();
   gameState = STATE_PLAYING;
   println("Restarted — Phase 4 collision active");

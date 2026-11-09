@@ -162,10 +162,24 @@ class Obstacle {
     y += dy;
   }
 
+  /**
+   * Far outside the window — must use a LARGER margin than respawnAtEdge(),
+   * otherwise aliens spawned just outside keep getting reset every frame
+   * and never enter the visible area.
+   */
   boolean isOffScreen() {
-    float margin = size;
+    float margin = size + 120;
     return (x < -margin || x > width + margin ||
             y < -margin || y > height + margin);
+  }
+
+  /** Place the alien at a visible on-screen position (used when starting a run). */
+  void placeOnScreen(float px, float py) {
+    x = px;
+    y = py;
+    heading = random(TWO_PI);
+    pickNewTurnBehaviour();
+    applyHeadingToVelocity();
   }
 
   /** Approximate collision radius used by Player.checkCollision(). */
