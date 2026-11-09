@@ -1,66 +1,62 @@
 /**
- * FastObstacle — inherits from Obstacle.
- *
- * Different behaviour:
- * - Higher base speed
- * - Stronger pull toward the player (centre)
- * - Occasional speed burst (dash)
- *
- * Stored in ArrayList<Obstacle> via polymorphism (Phase 5/7).
+ * FastObstacle — faster alien, stronger centre pull, occasional dash.
+ * Uses vx/vy only (no trig / noise / map).
  */
 class FastObstacle extends Obstacle {
   int dashCooldown;
 
   FastObstacle(float startX, float startY, float obstacleSize, PImage sprite) {
-    // Faster base speed than a normal Obstacle
     super(startX, startY, obstacleSize, random(3.5, 5.0), color(255, 150, 40), sprite);
     dashCooldown = int(random(40, 100));
   }
 
-  /**
-   * Override update(): still wander, but more aggressively chase the centre
-   * and periodically dash.
-   */
   @Override
   void update() {
-    // Stronger, more frequent aim toward the player
+    // Stronger / more frequent centre pull
     if (random(1) < 0.08) {
-      float toCenter = atan2(height / 2.0 - y, width / 2.0 - x);
-      heading = lerpAngle(heading, toCenter, random(0.4, 0.8));
+      float cx = width / 2.0;
+      float cy = height / 2.0;
+      if (x < cx) vx = speed;
+      if (x > cx) vx = -speed;
+      if (y < cy) vy = speed;
+      if (y > cy) vy = -speed;
     }
 
     dashCooldown--;
     if (dashCooldown <= 0) {
-      currentSpeed = speed * random(1.8, 2.4); // burst
+      // Burst: double current components
+      vx = vx * 2;
+      vy = vy * 2;
       dashCooldown = int(random(50, 120));
       framesUntilTurn = 20;
     }
 
-    // Re-use most of the base wander logic
     framesUntilTurn--;
     if (framesUntilTurn <= 0) {
-      pickNewTurnBehaviour();
-      // Keep them generally faster after a normal turn pick
-      currentSpeed = max(currentSpeed, speed);
+      pickNewVelocity();
+      // Keep generally fast
+      if (vx < 0 && vx > -speed) vx = -speed;
+      if (vx > 0 && vx < speed) vx = speed;
+      if (vy < 0 && vy > -speed) vy = -speed;
+      if (vy > 0 && vy < speed) vy = speed;
     }
 
-    float noiseTurn = map(noise(noiseSeedX, frameCount * 0.03), 0, 1, -0.04, 0.04);
-    heading += turnSpeed * 1.4 + noiseTurn;
-    applyHeadingToVelocity();
-    x += vx;
-    y += vy;
-    noiseSeedX += 0.015;
+    x = x + vx;
+    y = y + vy;
+
+    if ((frameCount / 8) % 2 == 0) {
+      drawSize = size;
+    } else {
+      drawSize = size * 1.1;
+    }
   }
 
   @Override
   void display() {
-    // Slightly sharper look: draw base image/shape, then a speed streak
-    pushMatrix();
-    translate(x, y);
+    // Speed streak without matrix transforms
     noStroke();
-    fill(255, 200, 80, 100);
-    ellipse(-vx * 2, -vy * 2, size * 0.7, size * 0.5);
-    popMatrix();
+    fill(255, 200, 80);
+    ellipse(x - vx * 2, y - vy * 2, drawSize * 0.7, drawSize * 0.5);
     super.display();
   }
 }

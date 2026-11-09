@@ -1,10 +1,9 @@
 /**
  * Don't Crash!! — Star Wars theme (Scheme A)
  *
- * Phase 8 (80%+):
- * - GameEntity interface + WorldObject abstract class
- * - Explosion collision animation while game continues
- * - Polymorphism across most entities
+ * Syllabus-safe rewrite:
+ * - No trig / matrix / noise / file I/O
+ * - if/else states, key polling, discrete facing
  */
 
 // ---------- Game states ----------
@@ -14,20 +13,16 @@ final int STATE_GAME_OVER = 2;
 
 int gameState = STATE_START;
 
-// ---------- Game entities ----------
 Player player;
 ScoreManager scores;
 
 ArrayList<Obstacle> aliens;
 ArrayList<HealthPack> healthPacks;
-
-// Polymorphic effects list (Explosions implement GameEntity)
 ArrayList<GameEntity> effects;
-
-// Player lasers (SPACE to fire)
 ArrayList<Bullet> bullets;
+
 int fireCooldown = 0;
-final int FIRE_COOLDOWN_FRAMES = 12;  // ~5 shots/sec
+final int FIRE_COOLDOWN_FRAMES = 12;
 final float BULLET_SPEED = 14;
 
 int framesUntilHealthSpawn = 0;
@@ -45,40 +40,31 @@ final int SPAWN_INTERVAL_MIN = 45;
 final int SPAWN_INTERVAL_MAX = 100;
 final int MAX_ALIENS = 12;
 
-boolean holdLeft = false;
-boolean holdRight = false;
-boolean holdUp = false;
-boolean holdDown = false;
 float pushSpeed = 6.0;
 
 int invulnFrames = 0;
 final int INVULN_DURATION = 90;
 int hitMessageFrames = 0;
 String hitMessage = "";
-int healFlashFrames = 0;   // green screen flash after picking a health pack
+int healFlashFrames = 0;
+int crashFlashFrames = 0;
 
 final int STAR_COUNT = 140;
 float[] starX = new float[STAR_COUNT];
 float[] starY = new float[STAR_COUNT];
 float[] starBright = new float[STAR_COUNT];
 
-PFont uiFont;
-
 void setup() {
   size(1280, 800);
   textAlign(CENTER, CENTER);
-  imageMode(CENTER);
-
-  uiFont = createFont("SansSerif", 18);
-  textFont(uiFont);
 
   imgAlienGreen = loadImage("alien_green.png");
   imgAlienPurple = loadImage("alien_purple.png");
   imgAlienOrange = loadImage("alien_orange.png");
-  imgPlayerShip = loadImage("player_ship.png");  // custom ship sprite
+  imgPlayerShip = loadImage("player_ship.png");
 
   player = new Player(imgPlayerShip);
-  scores = new ScoreManager();   // loads highscore.txt
+  scores = new ScoreManager();
   aliens = new ArrayList<Obstacle>();
   healthPacks = new ArrayList<HealthPack>();
   effects = new ArrayList<GameEntity>();
@@ -87,19 +73,22 @@ void setup() {
 }
 
 void draw() {
-  background(8, 10, 24);
+  // Solid background colour changes for flash feedback (no alpha fill)
+  if (gameState == STATE_PLAYING && healFlashFrames > 0) {
+    background(30, 140, 70);
+  } else if (gameState == STATE_PLAYING && crashFlashFrames > 0) {
+    background(140, 40, 40);
+  } else {
+    background(8, 10, 24);
+  }
 
-  switch (gameState) {
-    case STATE_START:
-      drawStarfield();
-      drawStartScreen();
-      break;
-    case STATE_PLAYING:
-      drawPlaying();
-      break;
-    case STATE_GAME_OVER:
-      drawGameOver();
-      break;
+  if (gameState == STATE_START) {
+    drawStarfield();
+    drawStartScreen();
+  } else if (gameState == STATE_PLAYING) {
+    drawPlaying();
+  } else if (gameState == STATE_GAME_OVER) {
+    drawGameOver();
   }
 }
 
@@ -115,29 +104,44 @@ void drawStarfield() {
   noStroke();
   for (int i = 0; i < STAR_COUNT; i++) {
     fill(starBright[i]);
-    circle(starX[i], starY[i], 2);
+    ellipse(starX[i], starY[i], 2, 2);
   }
 }
 
 void shiftStarfield(float dx, float dy) {
   for (int i = 0; i < STAR_COUNT; i++) {
-    starX[i] += dx;
-    starY[i] += dy;
-    if (starX[i] < 0) starX[i] += width;
-    if (starX[i] >= width) starX[i] -= width;
-    if (starY[i] < 0) starY[i] += height;
-    if (starY[i] >= height) starY[i] -= height;
+    starX[i] = starX[i] + dx;
+    starY[i] = starY[i] + dy;
+    if (starX[i] < 0) starX[i] = starX[i] + width;
+    if (starX[i] >= width) starX[i] = starX[i] - width;
+    if (starY[i] < 0) starY[i] = starY[i] + height;
+    if (starY[i] >= height) starY[i] = starY[i] - height;
   }
 }
 
+/**
+ * Read arrow keys each frame via keyPressed + keyCode
+ * (no keyReleased / hold flags).
+ */
 void applyArrowPush() {
   float dx = 0;
   float dy = 0;
 
-  if (holdLeft)  dx += pushSpeed;
-  if (holdRight) dx -= pushSpeed;
-  if (holdUp)    dy += pushSpeed;
-  if (holdDown)  dy -= pushSpeed;
+  if (keyPressed) {
+    if (keyCode == LEFT) {
+      dx = pushSpeed;
+      player.facing = player.DIR_LEFT;
+    } else if (keyCode == RIGHT) {
+      dx = -pushSpeed;
+      player.facing = player.DIR_RIGHT;
+    } else if (keyCode == UP) {
+      dy = pushSpeed;
+      player.facing = player.DIR_UP;
+    } else if (keyCode == DOWN) {
+      dy = -pushSpeed;
+      player.facing = player.DIR_DOWN;
+    }
+  }
 
   if (dx == 0 && dy == 0) return;
 
@@ -147,7 +151,6 @@ void applyArrowPush() {
   for (HealthPack pack : healthPacks) {
     pack.moveBy(dx, dy);
   }
-  // Explosions (and any other GameEntity effects) shift with the world
   for (GameEntity e : effects) {
     e.moveBy(dx, dy);
   }
@@ -169,8 +172,7 @@ void drawStartScreen() {
 
 void drawPlaying() {
   applyArrowPush();
-  player.updateFacing(holdLeft, holdRight, holdUp, holdDown);
-  player.update();   // GameEntity animation tick
+  player.update();
   scores.updateSurvivalScore();
 
   framesUntilSpawn--;
@@ -185,7 +187,6 @@ void drawPlaying() {
     framesUntilHealthSpawn = int(random(HEALTH_SPAWN_MIN, HEALTH_SPAWN_MAX));
   }
 
-  // Polymorphism: Obstacle subclasses via ArrayList<Obstacle>
   for (int i = aliens.size() - 1; i >= 0; i--) {
     Obstacle alien = aliens.get(i);
     alien.update();
@@ -202,7 +203,6 @@ void drawPlaying() {
     }
   }
 
-  // Polymorphism: GameEntity effects (explosions) — game keeps running
   for (int i = effects.size() - 1; i >= 0; i--) {
     GameEntity e = effects.get(i);
     e.update();
@@ -211,7 +211,6 @@ void drawPlaying() {
     }
   }
 
-  // Update lasers + bullet-vs-alien hits
   if (fireCooldown > 0) fireCooldown--;
   for (int i = bullets.size() - 1; i >= 0; i--) {
     Bullet b = bullets.get(i);
@@ -220,7 +219,6 @@ void drawPlaying() {
       bullets.remove(i);
       continue;
     }
-    // Check hit against every alien
     for (int j = aliens.size() - 1; j >= 0; j--) {
       Obstacle alien = aliens.get(j);
       if (b.hits(alien)) {
@@ -239,6 +237,7 @@ void drawPlaying() {
   if (invulnFrames > 0) invulnFrames--;
   if (hitMessageFrames > 0) hitMessageFrames--;
   if (healFlashFrames > 0) healFlashFrames--;
+  if (crashFlashFrames > 0) crashFlashFrames--;
 
   handleHealthPickups();
 
@@ -269,18 +268,6 @@ void drawPlaying() {
     player.display();
   }
 
-  // Red flash after crash
-  if (hitMessageFrames > 60 && healFlashFrames <= 0) {
-    fill(255, 40, 40, 60);
-    rect(0, 0, width, height);
-  }
-
-  // Green flash after collecting a health pack
-  if (healFlashFrames > 0) {
-    fill(40, 220, 80, 70);
-    rect(0, 0, width, height);
-  }
-
   fill(200);
   textSize(16);
   textAlign(LEFT, TOP);
@@ -298,11 +285,16 @@ void drawPlaying() {
 void spawnHealthPack() {
   if (healthPacks.size() >= MAX_HEALTH_PACKS) return;
 
-  float px, py;
-  do {
+  float px = random(80, width - 80);
+  float py = random(80, height - 80);
+
+  // Retry with while (not do-while) until far enough from centre
+  int tries = 0;
+  while (dist(px, py, width / 2.0, height / 2.0) < 180 && tries < 30) {
     px = random(80, width - 80);
     py = random(80, height - 80);
-  } while (dist(px, py, width / 2.0, height / 2.0) < 180);
+    tries++;
+  }
 
   healthPacks.add(new HealthPack(px, py));
 }
@@ -312,7 +304,6 @@ void handleHealthPickups() {
     HealthPack pack = healthPacks.get(i);
     if (!pack.touchesPlayer(player)) continue;
 
-    // Always flash green when a pack is collected
     healFlashFrames = 45;
 
     if (player.heal(1)) {
@@ -352,10 +343,10 @@ boolean handleCollisionWith(Obstacle alien, int index) {
   player.lives--;
   invulnFrames = INVULN_DURATION;
   hitMessageFrames = 90;
+  crashFlashFrames = 20;
   hitMessage = "CRASH! Lives left: " + player.lives;
   println(hitMessage);
 
-  // Phase 8: spawn explosion animation; game continues while it plays
   effects.add(new Explosion(alien.x, alien.y));
   aliens.remove(index);
 
@@ -365,10 +356,8 @@ boolean handleCollisionWith(Obstacle alien, int index) {
   return true;
 }
 
-/** Game over: try to save a new high score to disk. */
 void endRun() {
   gameState = STATE_GAME_OVER;
-  clearHoldKeys();
   scores.saveHighScore();
   println("GAME OVER — score=" + scores.currentScore + " high=" + scores.highScore);
 }
@@ -389,9 +378,12 @@ void drawGameOver() {
   }
   player.display();
 
-  fill(0, 0, 0, 160);
+  // Opaque dark panel (no alpha)
+  fill(20, 20, 30);
   rect(0, 0, width, height);
 
+  // Redraw text on top of panel — need entities already drawn above; panel covers them.
+  // Re-show scores only:
   fill(255, 80, 80);
   textSize(56);
   text("GAME OVER", width / 2, height / 2 - 70);
@@ -403,7 +395,7 @@ void drawGameOver() {
 
   if (scores.currentScore >= scores.highScore && scores.currentScore > 0) {
     fill(255, 220, 80);
-    text("New record saved to highscore.txt!", width / 2, height / 2 + 64);
+    text("New record this run!", width / 2, height / 2 + 64);
   }
 
   fill(200);
@@ -413,12 +405,12 @@ void drawGameOver() {
 
 void restartGame() {
   player.lives = 3;
-  player.facing = -HALF_PI;
+  player.facing = player.DIR_UP;
   invulnFrames = 0;
   hitMessageFrames = 0;
   hitMessage = "";
   healFlashFrames = 0;
-  clearHoldKeys();
+  crashFlashFrames = 0;
   scores.resetRun();
 
   aliens.clear();
@@ -444,24 +436,18 @@ void restartGame() {
   framesUntilSpawn = SPAWN_INTERVAL_MIN;
   framesUntilHealthSpawn = HEALTH_SPAWN_MIN;
   gameState = STATE_PLAYING;
-  println("Restarted — SPACE shooting enabled");
+  println("Restarted — syllabus-safe controls");
 }
 
-/** Fire one laser from the ship nose along current facing. */
 void tryFireBullet() {
   if (fireCooldown > 0) return;
 
-  float noseX = player.x + cos(player.facing) * player.bodySize * 0.55;
-  float noseY = player.y + sin(player.facing) * player.bodySize * 0.55;
-  bullets.add(new Bullet(noseX, noseY, player.facing, BULLET_SPEED));
+  float noseX = player.getNoseX();
+  float noseY = player.getNoseY();
+  float bvx = player.getBulletVx(BULLET_SPEED);
+  float bvy = player.getBulletVy(BULLET_SPEED);
+  bullets.add(new Bullet(noseX, noseY, bvx, bvy));
   fireCooldown = FIRE_COOLDOWN_FRAMES;
-}
-
-void clearHoldKeys() {
-  holdLeft = false;
-  holdRight = false;
-  holdUp = false;
-  holdDown = false;
 }
 
 void keyPressed() {
@@ -473,20 +459,8 @@ void keyPressed() {
 
   if (gameState != STATE_PLAYING) return;
 
-  if (keyCode == LEFT)  holdLeft = true;
-  if (keyCode == RIGHT) holdRight = true;
-  if (keyCode == UP)    holdUp = true;
-  if (keyCode == DOWN)  holdDown = true;
-
-  // SPACE fires a laser in the facing direction
+  // SPACE fires; arrows are read each frame in applyArrowPush()
   if (key == ' ') {
     tryFireBullet();
   }
-}
-
-void keyReleased() {
-  if (keyCode == LEFT)  holdLeft = false;
-  if (keyCode == RIGHT) holdRight = false;
-  if (keyCode == UP)    holdUp = false;
-  if (keyCode == DOWN)  holdDown = false;
 }

@@ -1,45 +1,29 @@
 /**
- * Bullet — laser shot fired with SPACE.
- *
- * Travels in the player's facing direction from the centred ship.
- * Implements GameEntity via WorldObject.
+ * Bullet — laser with fixed vx/vy (no cos/sin/rotate).
  */
 class Bullet extends WorldObject {
   float vx;
   float vy;
   boolean dead;
 
-  Bullet(float startX, float startY, float angle, float speed) {
+  Bullet(float startX, float startY, float velX, float velY) {
     super(startX, startY, 10);
-    vx = cos(angle) * speed;
-    vy = sin(angle) * speed;
+    vx = velX;
+    vy = velY;
     dead = false;
   }
 
   void update() {
-    x += vx;
-    y += vy;
+    x = x + vx;
+    y = y + vy;
   }
 
   void display() {
-    pushMatrix();
-    translate(x, y);
-    float ang = atan2(vy, vx);
-    rotate(ang);
-
     noStroke();
-    // Glow
-    fill(120, 220, 255, 100);
-    ellipse(0, 0, 22, 10);
-    // Core beam
+    fill(120, 220, 255);
+    ellipse(x, y, 18, 8);
     fill(220, 250, 255);
-    rectMode(CENTER);
-    rect(0, 0, 18, 4, 2);
-    fill(80, 180, 255);
-    rect(6, 0, 8, 3, 1);
-    rectMode(CORNER);
-
-    popMatrix();
+    rect(x - 9, y - 2, 18, 4);
   }
 
   boolean hits(Obstacle alien) {

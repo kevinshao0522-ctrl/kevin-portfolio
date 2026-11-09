@@ -1,22 +1,16 @@
 /**
- * Obstacle — base alien class (extends abstract WorldObject).
- *
- * Implements GameEntity via WorldObject.
- * Subclasses FastObstacle / MovingObstacle override update/display.
+ * Obstacle — base alien class.
+ * Moves with vx/vy only (no cos/sin/atan2/noise).
  */
 class Obstacle extends WorldObject {
   float speed;
-  float currentSpeed;
   float vx;
   float vy;
   color bodyColor;
   PImage img;
 
-  float heading;
-  float turnSpeed;
   int framesUntilTurn;
-  float noiseSeedX;
-  float noiseSeedY;
+  float drawSize;   // pulse by changing this, not scale()
 
   Obstacle(float startX, float startY, float obstacleSize, float moveSpeed, color c) {
     this(startX, startY, obstacleSize, moveSpeed, c, null);
@@ -25,51 +19,58 @@ class Obstacle extends WorldObject {
   Obstacle(float startX, float startY, float obstacleSize, float moveSpeed, color c, PImage sprite) {
     super(startX, startY, obstacleSize);
     speed = moveSpeed;
-    currentSpeed = moveSpeed;
     bodyColor = c;
     img = sprite;
-
-    noiseSeedX = random(1000);
-    noiseSeedY = random(1000);
-    heading = random(TWO_PI);
-    pickNewTurnBehaviour();
-    applyHeadingToVelocity();
+    drawSize = obstacleSize;
+    pickNewVelocity();
   }
 
-  void pickNewTurnBehaviour() {
+  /** Pick a random velocity using only random() on vx/vy. */
+  void pickNewVelocity() {
     framesUntilTurn = int(random(30, 120));
-    turnSpeed = random(-0.08, 0.08);
-    currentSpeed = speed * random(0.6, 1.5);
+    // Four-ish free directions via random components
+    vx = random(-speed, speed);
+    vy = random(-speed, speed);
+    // Avoid almost-zero motion
+    if (vx > -0.3 && vx < 0.3) {
+      if (random(1) < 0.5) vx = speed;
+      else vx = -speed;
+    }
+    if (vy > -0.3 && vy < 0.3) {
+      if (random(1) < 0.5) vy = speed * 0.5;
+      else vy = -speed * 0.5;
+    }
   }
 
-  void applyHeadingToVelocity() {
-    vx = cos(heading) * currentSpeed;
-    vy = sin(heading) * currentSpeed;
+  /** Softly pull toward centre using comparisons (no atan2). */
+  void nudgeTowardCenter() {
+    float cx = width / 2.0;
+    float cy = height / 2.0;
+    if (x < cx) vx = vx + 0.15;
+    if (x > cx) vx = vx - 0.15;
+    if (y < cy) vy = vy + 0.15;
+    if (y > cy) vy = vy - 0.15;
   }
 
   void update() {
     framesUntilTurn--;
     if (framesUntilTurn <= 0) {
-      pickNewTurnBehaviour();
+      pickNewVelocity();
     }
-
-    float noiseTurn = map(noise(noiseSeedX, frameCount * 0.02), 0, 1, -0.05, 0.05);
-    heading += turnSpeed + noiseTurn;
 
     if (random(1) < 0.02) {
-      float toCenter = atan2(height / 2.0 - y, width / 2.0 - x);
-      heading = lerpAngle(heading, toCenter, random(0.15, 0.45));
+      nudgeTowardCenter();
     }
 
-    applyHeadingToVelocity();
-    x += vx;
-    y += vy;
-    noiseSeedX += 0.01;
-  }
+    x = x + vx;
+    y = y + vy;
 
-  float lerpAngle(float from, float to, float amt) {
-    float diff = atan2(sin(to - from), cos(to - from));
-    return from + diff * amt;
+    // Pulse size with a simple frame toggle (no sin/scale)
+    if ((frameCount / 10) % 2 == 0) {
+      drawSize = size;
+    } else {
+      drawSize = size * 1.08;
+    }
   }
 
   void respawnAtEdge() {
@@ -79,63 +80,55 @@ class Obstacle extends WorldObject {
     if (side == 0) {
       x = -margin;
       y = random(height);
-      heading = random(-HALF_PI * 0.7, HALF_PI * 0.7);
+      vx = random(speed * 0.5, speed * 1.2);
+      vy = random(-speed, speed);
     } else if (side == 1) {
       x = width + margin;
       y = random(height);
-      heading = random(PI - HALF_PI * 0.7, PI + HALF_PI * 0.7);
+      vx = random(-speed * 1.2, -speed * 0.5);
+      vy = random(-speed, speed);
     } else if (side == 2) {
       x = random(width);
       y = -margin;
-      heading = random(0.3, PI - 0.3);
+      vx = random(-speed, speed);
+      vy = random(speed * 0.5, speed * 1.2);
     } else {
       x = random(width);
       y = height + margin;
-      heading = random(-PI + 0.3, -0.3);
+      vx = random(-speed, speed);
+      vy = random(-speed * 1.2, -speed * 0.5);
     }
 
-    pickNewTurnBehaviour();
-    applyHeadingToVelocity();
+    framesUntilTurn = int(random(30, 120));
   }
 
   void placeOnScreen(float px, float py) {
     x = px;
     y = py;
-    heading = random(TWO_PI);
-    pickNewTurnBehaviour();
-    applyHeadingToVelocity();
+    pickNewVelocity();
   }
 
   void display() {
-    pushMatrix();
-    translate(x, y);
-
-    float pulse = 1.0 + 0.07 * sin(frameCount * 0.18 + x * 0.02);
-    scale(pulse);
-
     if (img != null) {
-      imageMode(CENTER);
-      image(img, 0, 0, size, size);
+      // Default imageMode CORNER: convert centre to top-left
+      image(img, x - drawSize / 2, y - drawSize / 2, drawSize, drawSize);
     } else {
       noStroke();
       fill(bodyColor);
-      ellipse(0, 0, size, size * 0.75);
+      ellipse(x, y, drawSize, drawSize * 0.75);
       fill(255);
-      ellipse(-size * 0.18, -size * 0.05, size * 0.22, size * 0.28);
-      ellipse(size * 0.18, -size * 0.05, size * 0.22, size * 0.28);
+      ellipse(x - drawSize * 0.18, y - drawSize * 0.05, drawSize * 0.22, drawSize * 0.28);
+      ellipse(x + drawSize * 0.18, y - drawSize * 0.05, drawSize * 0.22, drawSize * 0.28);
       fill(20);
-      ellipse(-size * 0.18, -size * 0.05, size * 0.1, size * 0.14);
-      ellipse(size * 0.18, -size * 0.05, size * 0.1, size * 0.14);
+      ellipse(x - drawSize * 0.18, y - drawSize * 0.05, drawSize * 0.1, drawSize * 0.14);
+      ellipse(x + drawSize * 0.18, y - drawSize * 0.05, drawSize * 0.1, drawSize * 0.14);
     }
-
-    popMatrix();
   }
 
   float getCollisionRadius() {
     return size * 0.4;
   }
 
-  /** Obstacles are removed by the main list, not via isFinished(). */
   boolean isFinished() {
     return false;
   }

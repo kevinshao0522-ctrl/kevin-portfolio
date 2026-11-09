@@ -1,47 +1,54 @@
 /**
- * MovingObstacle — inherits from Obstacle.
- *
- * Different behaviour:
- * - Side-to-side zig-zag while advancing
- * - Slower forward speed but hard to predict laterally
+ * MovingObstacle — zig-zag by flipping a side offset on vx/vy.
+ * No trig / matrix.
  */
 class MovingObstacle extends Obstacle {
-  float zigPhase;
-  float zigAmplitude;
+  float sideStep;
+  int zigTimer;
 
   MovingObstacle(float startX, float startY, float obstacleSize, PImage sprite) {
     super(startX, startY, obstacleSize, random(1.4, 2.2), color(220, 120, 255), sprite);
-    zigPhase = random(TWO_PI);
-    zigAmplitude = random(2.0, 4.0);
+    sideStep = random(2.0, 4.0);
+    zigTimer = 0;
   }
 
   @Override
   void update() {
-    // Soft pull toward centre for forward progress
-    float toCenter = atan2(height / 2.0 - y, width / 2.0 - x);
-    heading = lerpAngle(heading, toCenter, 0.03);
+    // Soft pull toward centre with comparisons
+    float cx = width / 2.0;
+    float cy = height / 2.0;
+    if (x < cx) vx = vx + 0.05;
+    if (x > cx) vx = vx - 0.05;
+    if (y < cy) vy = vy + 0.05;
+    if (y > cy) vy = vy - 0.05;
 
-    // Perpendicular zig-zag offset
-    zigPhase += 0.12;
-    float sideX = cos(toCenter + HALF_PI) * sin(zigPhase) * zigAmplitude;
-    float sideY = sin(toCenter + HALF_PI) * sin(zigPhase) * zigAmplitude;
+    // Zig-zag: alternate adding sideStep to x then y path
+    zigTimer++;
+    float extraX = 0;
+    float extraY = 0;
+    if ((zigTimer / 15) % 2 == 0) {
+      extraX = sideStep;
+    } else {
+      extraX = -sideStep;
+    }
 
-    applyHeadingToVelocity();
-    x += vx + sideX;
-    y += vy + sideY;
+    x = x + vx + extraX;
+    y = y + vy + extraY;
+
+    if ((frameCount / 10) % 2 == 0) {
+      drawSize = size;
+    } else {
+      drawSize = size * 1.08;
+    }
   }
 
   @Override
   void display() {
-    // Purple ring to visually distinguish this subclass
-    pushMatrix();
-    translate(x, y);
-    noFill();
-    stroke(220, 120, 255, 180);
-    strokeWeight(2);
-    ellipse(0, 0, size * 1.15, size * 1.15);
+    // Purple ring drawn as a larger ellipse outline approximation (filled ring band)
     noStroke();
-    popMatrix();
+    fill(220, 120, 255);
+    ellipse(x, y, drawSize * 1.15, drawSize * 1.15);
+    // Cover centre so ring look remains when sprite draws on top
     super.display();
   }
 }
