@@ -55,6 +55,7 @@ int invulnFrames = 0;
 final int INVULN_DURATION = 90;
 int hitMessageFrames = 0;
 String hitMessage = "";
+int healFlashFrames = 0;   // green screen flash after picking a health pack
 
 final int STAR_COUNT = 140;
 float[] starX = new float[STAR_COUNT];
@@ -238,6 +239,7 @@ void drawPlaying() {
 
   if (invulnFrames > 0) invulnFrames--;
   if (hitMessageFrames > 0) hitMessageFrames--;
+  if (healFlashFrames > 0) healFlashFrames--;
 
   handleHealthPickups();
 
@@ -268,8 +270,15 @@ void drawPlaying() {
     player.display();
   }
 
-  if (hitMessageFrames > 60) {
+  // Red flash after crash
+  if (hitMessageFrames > 60 && healFlashFrames <= 0) {
     fill(255, 40, 40, 60);
+    rect(0, 0, width, height);
+  }
+
+  // Green flash after collecting a health pack
+  if (healFlashFrames > 0) {
+    fill(40, 220, 80, 70);
     rect(0, 0, width, height);
   }
 
@@ -303,6 +312,9 @@ void handleHealthPickups() {
   for (int i = healthPacks.size() - 1; i >= 0; i--) {
     HealthPack pack = healthPacks.get(i);
     if (!pack.touchesPlayer(player)) continue;
+
+    // Always flash green when a pack is collected
+    healFlashFrames = 45;
 
     if (player.heal(1)) {
       scores.addBonus(5);
@@ -406,6 +418,7 @@ void restartGame() {
   invulnFrames = 0;
   hitMessageFrames = 0;
   hitMessage = "";
+  healFlashFrames = 0;
   clearHoldKeys();
   scores.resetRun();
 
