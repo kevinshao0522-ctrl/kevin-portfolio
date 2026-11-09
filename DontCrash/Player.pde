@@ -2,16 +2,21 @@
  * Player — the player's spaceship.
  *
  * Stays FIXED at the screen centre.
- * Phase 6: appearance (facing angle / look) changes with arrow keys.
+ * Phase 6: facing changes with arrow keys.
+ * Phase 7: simple engine animation sequence (frame-based).
  */
 class Player {
   float x;
   float y;
   float bodySize;
   int lives;
-
-  // Facing angle in radians.  -HALF_PI = nose up (default).
   float facing;
+
+  // Animation: 4 engine frames, advanced every few draw cycles
+  int animFrame;
+  int animTimer;
+  final int ANIM_SPEED = 5;   // frames of draw() per animation step
+  final int ANIM_COUNT = 4;
 
   Player() {
     x = width / 2.0;
@@ -19,6 +24,8 @@ class Player {
     bodySize = 48;
     lives = 3;
     facing = -HALF_PI;
+    animFrame = 0;
+    animTimer = 0;
   }
 
   float getCollisionRadius() {
@@ -31,21 +38,12 @@ class Player {
     return distance < minDist;
   }
 
-  /**
-   * Heal by the given amount, but never above 3 lives.
-   * @return true if at least 1 life was actually restored
-   */
   boolean heal(int amount) {
     if (lives >= 3) return false;
     lives = min(3, lives + amount);
     return true;
   }
 
-  /**
-   * Update ship facing from held arrow keys.
-   * Even though the ship does not translate, its nose turns
-   * toward the direction the player is "flying".
-   */
   void updateFacing(boolean left, boolean right, boolean up, boolean down) {
     float dx = 0;
     float dy = 0;
@@ -53,21 +51,26 @@ class Player {
     if (right) dx += 1;
     if (up)    dy -= 1;
     if (down)  dy += 1;
-
-    // Only change facing when at least one arrow is held
     if (dx != 0 || dy != 0) {
       facing = atan2(dy, dx);
+    }
+  }
+
+  /** Advance the engine flame animation sequence. */
+  void updateAnimation() {
+    animTimer++;
+    if (animTimer >= ANIM_SPEED) {
+      animTimer = 0;
+      animFrame = (animFrame + 1) % ANIM_COUNT;
     }
   }
 
   void display() {
     pushMatrix();
     translate(x, y);
-    // Triangle art points "up" (-Y). Rotate so nose matches facing.
     rotate(facing + HALF_PI);
 
     noStroke();
-    // Body colour shifts slightly with direction for clearer feedback
     fill(180, 210, 255);
     triangle(0, -bodySize * 0.7,
              -bodySize * 0.55, bodySize * 0.55,
@@ -76,12 +79,16 @@ class Player {
     fill(80, 160, 255);
     ellipse(0, 0, bodySize * 0.35, bodySize * 0.35);
 
-    // Engine glow at the rear
-    fill(255, 140, 40);
-    ellipse(-bodySize * 0.2, bodySize * 0.55, 8, 12);
-    ellipse(bodySize * 0.2, bodySize * 0.55, 8, 12);
+    // Animated engine exhaust — length/brightness changes by animFrame
+    float flameLen = 10 + animFrame * 5;
+    float flameAlpha = 160 + animFrame * 20;
+    fill(255, 160, 40, flameAlpha);
+    ellipse(-bodySize * 0.2, bodySize * 0.55 + flameLen * 0.15, 8, flameLen);
+    ellipse(bodySize * 0.2, bodySize * 0.55 + flameLen * 0.15, 8, flameLen);
+    fill(255, 230, 120, flameAlpha);
+    ellipse(-bodySize * 0.2, bodySize * 0.55, 5, flameLen * 0.5);
+    ellipse(bodySize * 0.2, bodySize * 0.55, 5, flameLen * 0.5);
 
-    // Direction tip light
     fill(255, 255, 120);
     ellipse(0, -bodySize * 0.55, 8, 8);
 

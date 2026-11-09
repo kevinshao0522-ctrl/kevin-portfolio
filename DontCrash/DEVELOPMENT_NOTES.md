@@ -55,6 +55,11 @@ arrow keys move aliens/background the opposite way; shooting comes later.
 - **Techniques used:** new class, `ArrayList<HealthPack>`, `Player.heal()`, spawn away from centre.
 - **Code location:** `HealthPack.pde`, `Player.heal()`, `DontCrash.pde` (`spawnHealthPack`, `handleHealthPickups`)
 
-### Phase 7 — Animation, polymorphism, high scores (not started)
+### Phase 7 — Animation, polymorphism, high scores (current)
+- **Date:** 2026-11-09 (Asia/Shanghai)
+- **What was done:** Player engine flame animation sequence; alien pulse scale animation. Survival score (+1/sec) and heal bonus. `ScoreManager` loads/saves `highscore.txt` with `loadStrings`/`saveStrings`. ArrayList polymorphism call path kept/emphasized.
+- **Techniques used:** frame-index animation, `saveStrings`/`loadStrings`, scoring, file I/O, polymorphism via `Obstacle` list.
+- **Code location:** `ScoreManager.pde`, `Player.updateAnimation()`, `Obstacle.display()` pulse, `DontCrash.pde` (`endRun`, HUD score)
 
 ### Phase 8 — Interface/abstract class, explosion (not started)
+

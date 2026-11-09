@@ -123,6 +123,10 @@ class Obstacle {
     pushMatrix();
     translate(x, y);
 
+    // Phase 7: lightweight pulse animation (each alien phases differently)
+    float pulse = 1.0 + 0.07 * sin(frameCount * 0.18 + x * 0.02);
+    scale(pulse);
+
     if (img != null) {
       imageMode(CENTER);
       image(img, 0, 0, size, size);
