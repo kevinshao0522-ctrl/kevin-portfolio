@@ -132,7 +132,8 @@ class Obstacle extends WorldObject {
   }
 
   float getCollisionRadius() {
-    return size * 0.4;
+    // Match the smaller drawn body (tight hitbox)
+    return size * 0.35;
   }
 
   boolean isFinished() {

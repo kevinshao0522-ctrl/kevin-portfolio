@@ -410,7 +410,7 @@ void handleHealthPickups(ArrayList<HealthPack> list) {
 void spawnAlienAtEdge() {
   if (aliens.size() >= MAX_ALIENS) return;
 
-  float sz = random(48, 70);
+  float sz = random(28, 42);
   float roll = random(1);
   Obstacle alien;
 
@@ -501,15 +501,15 @@ void restartGame() {
   bullets.clear();
   fireCooldown = 0;
 
-  Obstacle a1 = new Obstacle(180, 140, 56, 2.2, color(120, 220, 120), imgAlienGreen);
+  Obstacle a1 = new Obstacle(180, 140, 36, 2.2, color(120, 220, 120), imgAlienGreen);
   a1.placeOnScreen(180, 140);
   aliens.add(a1);
 
-  FastObstacle a2 = new FastObstacle(width - 200, 160, 50, imgAlienOrange);
+  FastObstacle a2 = new FastObstacle(width - 200, 160, 32, imgAlienOrange);
   a2.placeOnScreen(width - 200, 160);
   aliens.add(a2);
 
-  MovingObstacle a3 = new MovingObstacle(width / 2, height - 140, 58, imgAlienPurple);
+  MovingObstacle a3 = new MovingObstacle(width / 2, height - 140, 38, imgAlienPurple);
   a3.placeOnScreen(width / 2, height - 140);
   aliens.add(a3);
 
