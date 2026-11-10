@@ -13,7 +13,7 @@ class Player implements GameEntity {
   float y;
   float bodySize;
   private int lives;
-  int facing;
+  private int facing;
 
   PImage spriteUp;
   PImage spriteDown;
@@ -53,8 +53,22 @@ class Player implements GameEntity {
     }
   }
 
-  void resetLives() {
+  /** Reset lives, facing, and animation for a new run. */
+  void resetForNewRun() {
     lives = 3;
+    facing = DIR_UP;
+    animFrame = 0;
+    animTimer = 0;
+  }
+
+  /**
+   * Set facing from the most recently pressed arrow key
+   * (call from keyPressed, not from a hold-flag if-chain).
+   */
+  void setFacingFromKey(int dir) {
+    if (dir == DIR_UP || dir == DIR_RIGHT || dir == DIR_DOWN || dir == DIR_LEFT) {
+      facing = dir;
+    }
   }
 
   float getCollisionRadius() {
@@ -76,14 +90,6 @@ class Player implements GameEntity {
       lives = lives + amount;
     }
     return true;
-  }
-
-  void updateFacing(boolean left, boolean right, boolean up, boolean down) {
-    // Last pressed direction wins if several are held
-    if (left)  facing = DIR_LEFT;
-    if (right) facing = DIR_RIGHT;
-    if (up)    facing = DIR_UP;
-    if (down)  facing = DIR_DOWN;
   }
 
   float getBulletVx(float speed) {

@@ -149,7 +149,7 @@ void applyArrowPush() {
   if (holdUp)    dy = dy + pushSpeed;
   if (holdDown)  dy = dy - pushSpeed;
 
-  player.updateFacing(holdLeft, holdRight, holdUp, holdDown);
+  // Facing is set in keyPressed (last pressed arrow), not here
 
   if (dx == 0 && dy == 0) return;
 
@@ -171,11 +171,17 @@ void applyArrowPush() {
 void drawStartScreen() {
   fill(240);
   textSize(64);
-  text("Don't Crash!!", width / 2, height / 2 - 30);
+  text("Don't Crash!!", width / 2, height / 2 - 90);
+
+  fill(200);
+  textSize(20);
+  text("Arrow keys: push the world (ship stays in the centre)", width / 2, height / 2 - 10);
+  text("SPACE: fire lasers", width / 2, height / 2 + 24);
+  text("You have 3 lives", width / 2, height / 2 + 58);
 
   textSize(22);
   fill(180);
-  text("Press ENTER to start", width / 2, height / 2 + 40);
+  text("Press ENTER to start", width / 2, height / 2 + 110);
 }
 
 void drawPlaying() {
@@ -210,9 +216,11 @@ void drawPlaying() {
     handlePlayerAlienCollisions(aliens);
   }
 
-  // Uniform cleanup after all mark-dead decisions
+  // Uniform cleanup after all mark-finished decisions
   removeDeadAliens(aliens);
   removeFinishedBullets(bullets);
+  removeFinishedHealthPacks(healthPacks);
+  removeFinishedEffects(effects);
 
   drawStarfield();
   drawWorldEntities(healthPacks, aliens, bullets, effects);
@@ -262,7 +270,7 @@ void updateHealthSpawning() {
 void updateAliens(ArrayList<Obstacle> list) {
   for (int i = 0; i < list.size(); i++) {
     Obstacle alien = list.get(i);
-    if (alien.dead) continue;
+    if (alien.isDead()) continue;
     alien.update();
     if (alien.isOffScreen()) {
       alien.markDead();
@@ -271,22 +279,21 @@ void updateAliens(ArrayList<Obstacle> list) {
 }
 
 void updateHealthPacks(ArrayList<HealthPack> list) {
-  for (int i = list.size() - 1; i >= 0; i--) {
+  for (int i = 0; i < list.size(); i++) {
     HealthPack pack = list.get(i);
+    if (pack.isDead()) continue;
     pack.update();
     if (pack.isOffScreen()) {
-      list.remove(i);
+      pack.markDead();
     }
   }
 }
 
 void updateEffects(ArrayList<GameEntity> list) {
-  for (int i = list.size() - 1; i >= 0; i--) {
+  for (int i = 0; i < list.size(); i++) {
     GameEntity e = list.get(i);
+    if (e.isFinished()) continue;
     e.update();
-    if (e.isFinished()) {
-      list.remove(i);
-    }
   }
 }
 
@@ -303,7 +310,7 @@ void updateBullets(ArrayList<Bullet> bulletList, ArrayList<Obstacle> alienList) 
 
     for (int j = 0; j < alienList.size(); j++) {
       Obstacle alien = alienList.get(j);
-      if (alien.dead) continue;
+      if (alien.isDead()) continue;
 
       if (b.hits(alien)) {
         effects.add(new Explosion(alien.x, alien.y));
@@ -319,13 +326,29 @@ void updateBullets(ArrayList<Bullet> bulletList, ArrayList<Obstacle> alienList) 
 
 void removeDeadAliens(ArrayList<Obstacle> list) {
   for (int i = list.size() - 1; i >= 0; i--) {
-    if (list.get(i).dead) {
+    if (list.get(i).isDead()) {
       list.remove(i);
     }
   }
 }
 
 void removeFinishedBullets(ArrayList<Bullet> list) {
+  for (int i = list.size() - 1; i >= 0; i--) {
+    if (list.get(i).isFinished()) {
+      list.remove(i);
+    }
+  }
+}
+
+void removeFinishedHealthPacks(ArrayList<HealthPack> list) {
+  for (int i = list.size() - 1; i >= 0; i--) {
+    if (list.get(i).isFinished()) {
+      list.remove(i);
+    }
+  }
+}
+
+void removeFinishedEffects(ArrayList<GameEntity> list) {
   for (int i = list.size() - 1; i >= 0; i--) {
     if (list.get(i).isFinished()) {
       list.remove(i);
@@ -391,8 +414,9 @@ void spawnHealthPack() {
 }
 
 void handleHealthPickups(ArrayList<HealthPack> list) {
-  for (int i = list.size() - 1; i >= 0; i--) {
+  for (int i = 0; i < list.size(); i++) {
     HealthPack pack = list.get(i);
+    if (pack.isDead()) continue;
     if (!pack.touchesPlayer(player)) continue;
 
     healFlashFrames = 45;
@@ -403,7 +427,7 @@ void handleHealthPickups(ArrayList<HealthPack> list) {
     } else {
       showHitMessage("Lives Full (3/3)", 180, 220, 180, 55);
     }
-    list.remove(i);
+    pack.markDead();
   }
 }
 
@@ -430,7 +454,7 @@ void spawnAlienAtEdge() {
 void handlePlayerAlienCollisions(ArrayList<Obstacle> list) {
   for (int i = 0; i < list.size(); i++) {
     Obstacle alien = list.get(i);
-    if (alien.dead) continue;
+    if (alien.isDead()) continue;
     if (!player.checkCollision(alien)) continue;
 
     player.loseLife();
@@ -482,8 +506,7 @@ void drawGameOver() {
 }
 
 void restartGame() {
-  player.resetLives();
-  player.facing = player.DIR_UP;
+  player.resetForNewRun();
   invulnFrames = 0;
   hitMessageFrames = 0;
   hitMessage = "";
@@ -518,7 +541,6 @@ void restartGame() {
   framesUntilSpawn = SPAWN_INTERVAL_MIN;
   framesUntilHealthSpawn = HEALTH_SPAWN_MIN;
   gameState = STATE_PLAYING;
-  println("Restarted — review refactor applied");
 }
 
 void tryFireBullet() {
@@ -541,10 +563,23 @@ void keyPressed() {
 
   if (gameState != STATE_PLAYING) return;
 
-  if (keyCode == LEFT)  holdLeft = true;
-  if (keyCode == RIGHT) holdRight = true;
-  if (keyCode == UP)    holdUp = true;
-  if (keyCode == DOWN)  holdDown = true;
+  // Record the last pressed arrow as facing (true last-key wins)
+  if (keyCode == LEFT) {
+    holdLeft = true;
+    player.setFacingFromKey(player.DIR_LEFT);
+  }
+  if (keyCode == RIGHT) {
+    holdRight = true;
+    player.setFacingFromKey(player.DIR_RIGHT);
+  }
+  if (keyCode == UP) {
+    holdUp = true;
+    player.setFacingFromKey(player.DIR_UP);
+  }
+  if (keyCode == DOWN) {
+    holdDown = true;
+    player.setFacingFromKey(player.DIR_DOWN);
+  }
 
   if (key == ' ') {
     holdSpace = true;

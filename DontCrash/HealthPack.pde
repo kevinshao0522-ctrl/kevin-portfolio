@@ -1,12 +1,27 @@
 /**
  * HealthPack — heal pickup. Stationary; pulse via size toggle (no sin/scale).
+ * Mark finished first; main loop removes later.
  */
 class HealthPack extends WorldObject {
   float drawSize;
+  private boolean dead;
 
   HealthPack(float startX, float startY) {
     super(startX, startY, 36);
     drawSize = 36;
+    dead = false;
+  }
+
+  void markDead() {
+    dead = true;
+  }
+
+  boolean isDead() {
+    return dead;
+  }
+
+  boolean isFinished() {
+    return dead;
   }
 
   void update() {
