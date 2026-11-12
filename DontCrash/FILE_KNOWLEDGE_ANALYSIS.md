@@ -296,4 +296,4 @@
 3. `Obstacle.pde` → `FastObstacle` / `MovingObstacle` — 继承  
 4. `GameEntity` + `WorldObject` — 接口 / 抽象类  
 5. `Explosion.pde` — 爆炸时游戏仍继续  
-6. `ScoreManager.pde` — `loadStrings` / `saveStrings`
+6. `ScoreManager.pde` — `loadStrings` / `saveStrings`（`data/highscore.txt`）+ `getLevel()`

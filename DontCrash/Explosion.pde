@@ -1,52 +1,45 @@
 /**
- * Explosion.pde — Short crash / hit visual effect.
- * Uses fixed spark offsets (no trig); gameplay continues while it plays.
+ * Explosion.pde — Collision animation that plays while the game continues.
+ * Cycles a PImage frame sequence (80%+ / 70–80% animation criterion).
  */
 class Explosion extends WorldObject {
   int life;
-  final int MAX_LIFE = 36;
+  final int MAX_LIFE = 30;
+  PImage[] frames;
+  int frameIndex;
+  int frameTimer;
+  final int FRAME_HOLD = 6;
 
-  float[] sparkDx;
-  float[] sparkDy;
-  float[] sparkDist;
-
-  Explosion(float cx, float cy) {
-    super(cx, cy, 40);
+  Explosion(float cx, float cy, PImage[] animFrames) {
+    super(cx, cy, 64);
     life = MAX_LIFE;
-
-    // Predefined spark directions instead of angles
-    sparkDx = new float[] { 1, -1, 0, 0, 1, -1, 1, -1, 0.5, -0.5 };
-    sparkDy = new float[] { 0, 0, 1, -1, 1, -1, -1, 1, 0.5, -0.5 };
-    sparkDist = new float[10];
-    for (int i = 0; i < sparkDist.length; i++) {
-      sparkDist[i] = random(8, 28);
-    }
+    frames = animFrames;
+    frameIndex = 0;
+    frameTimer = 0;
   }
 
   void update() {
     life--;
-    for (int i = 0; i < sparkDist.length; i++) {
-      sparkDist[i] = sparkDist[i] + 2.2;
+    frameTimer++;
+    if (frames != null && frameTimer >= FRAME_HOLD) {
+      frameTimer = 0;
+      if (frameIndex < frames.length - 1) {
+        frameIndex = frameIndex + 1;
+      }
     }
   }
 
   void display() {
-    float t = 1.0 - life / float(MAX_LIFE);
-    float radius = size * (0.4 + t * 2.2);
-
-    noStroke();
-    fill(255, 200, 80);
-    ellipse(x, y, radius, radius);
-    fill(255, 100, 40);
-    ellipse(x, y, radius * 0.65, radius * 0.65);
-    fill(255, 240, 180);
-    ellipse(x, y, radius * 0.35, radius * 0.35);
-
-    for (int i = 0; i < sparkDx.length; i++) {
-      float sx = x + sparkDx[i] * sparkDist[i] * (0.5 + t);
-      float sy = y + sparkDy[i] * sparkDist[i] * (0.5 + t);
-      fill(255, 180, 60);
-      ellipse(sx, sy, 5, 5);
+    if (frames != null && frames.length > 0 && frames[frameIndex] != null) {
+      float drawSize = size * (0.8 + frameIndex * 0.15);
+      image(frames[frameIndex], x - drawSize / 2, y - drawSize / 2, drawSize, drawSize);
+    } else {
+      // Fallback shapes if images failed to load
+      noStroke();
+      fill(255, 180, 40);
+      ellipse(x, y, size, size);
+      fill(255, 90, 30);
+      ellipse(x, y, size * 0.6, size * 0.6);
     }
   }
 

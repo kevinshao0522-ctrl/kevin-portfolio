@@ -56,16 +56,16 @@ arrow keys move aliens/background the opposite way; shooting comes later.
 - **Code location:** `HealthPack.pde`, `Player.heal()`, `DontCrash.pde` (`spawnHealthPack`, `handleHealthPickups`)
 
 ### Phase 7 — Animation, polymorphism, high scores
-- **Date:** 2026-11-09 (Asia/Shanghai)
-- **What was done:** Player engine flame animation sequence; alien pulse scale animation. Survival score (+1/sec) and heal bonus. `ScoreManager` loads/saves `highscore.txt` with `loadStrings`/`saveStrings`. ArrayList polymorphism call path kept/emphasized.
-- **Techniques used:** frame-index animation, `saveStrings`/`loadStrings`, scoring, file I/O, polymorphism via `Obstacle` list.
-- **Code location:** `ScoreManager.pde`, `Player.updateAnimation()`, `Obstacle.display()` pulse, `DontCrash.pde` (`endRun`, HUD score)
+- **Date:** 2026-11-09 (Asia/Shanghai); updated 2026-11-12
+- **What was done:** Player flame uses a `PImage[]` sequence (`flame_0..3.png`). Base aliens use `alien_anim_0..2.png`. Survival score (+1/sec) and heal bonus. `ScoreManager` loads/saves `data/highscore.txt` with `loadStrings`/`saveStrings`. Levels 1–4 rise with score.
+- **Techniques used:** `PImage` frame sequences, `saveStrings`/`loadStrings`, scoring, file I/O, polymorphism via `Obstacle` list.
+- **Code location:** `ScoreManager.pde`, `Player.setFlameFrames()`, `Obstacle.setAnimFrames()`, `DontCrash.pde` (`endRun`, HUD)
 
 ### Phase 8 — Interface/abstract class, explosion
-- **Date:** 2026-11-09 (Asia/Shanghai)
-- **What was done:** Added `GameEntity` interface and abstract `WorldObject`. `Obstacle`, `HealthPack`, `Explosion` extend `WorldObject`; `Player` implements `GameEntity`. Crash spawns `Explosion` animation that plays briefly while gameplay continues; finished explosions are removed from `ArrayList<GameEntity> effects`.
-- **Techniques used:** `interface`, `abstract class`, polymorphism across entities, short-lived VFX while game loop continues.
-- **Code location:** `GameEntity.pde`, `WorldObject.pde`, `Explosion.pde`, `DontCrash.pde` (`effects`, `handleCollisionWith`)
+- **Date:** 2026-11-09 (Asia/Shanghai); updated 2026-11-12
+- **What was done:** Added `GameEntity` interface and abstract `WorldObject`. `Obstacle`, `HealthPack`, `Explosion`, `Bullet` extend `WorldObject`; `Player` implements `GameEntity`. Crash/hit spawns `Explosion` with `explosion_0..4.png` frame sequence while gameplay continues; finished effects leave `ArrayList<GameEntity>`.
+- **Techniques used:** `interface`, `abstract class`, polymorphism across entities, `PImage` collision animation while game loop continues.
+- **Code location:** `GameEntity.pde`, `WorldObject.pde`, `Explosion.pde`, `DontCrash.pde` (`effects`, `handlePlayerAlienCollisions`)
 
 ### Phase 8+ — SPACE shooting
 - **Date:** 2026-11-09 (Asia/Shanghai)

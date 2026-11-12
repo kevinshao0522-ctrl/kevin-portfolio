@@ -34,6 +34,9 @@ PImage imgShipUp;
 PImage imgShipDown;
 PImage imgShipLeft;
 PImage imgShipRight;
+PImage[] explosionFrames;
+PImage[] alienAnimFrames;
+PImage[] flameFrames;
 
 int framesUntilSpawn = 0;
 final int SPAWN_INTERVAL_MIN = 45;
@@ -76,7 +79,22 @@ void setup() {
   imgShipLeft = loadImage("player_ship_left.png");
   imgShipRight = loadImage("player_ship_right.png");
 
+  // PImage animation sequences (70–80% / 80%+)
+  explosionFrames = new PImage[5];
+  for (int i = 0; i < explosionFrames.length; i++) {
+    explosionFrames[i] = loadImage("explosion_" + i + ".png");
+  }
+  alienAnimFrames = new PImage[3];
+  for (int i = 0; i < alienAnimFrames.length; i++) {
+    alienAnimFrames[i] = loadImage("alien_anim_" + i + ".png");
+  }
+  flameFrames = new PImage[4];
+  for (int i = 0; i < flameFrames.length; i++) {
+    flameFrames[i] = loadImage("flame_" + i + ".png");
+  }
+
   player = new Player(imgShipUp, imgShipDown, imgShipLeft, imgShipRight);
+  player.setFlameFrames(flameFrames);
   scores = new ScoreManager();
   aliens = new ArrayList<Obstacle>();
   healthPacks = new ArrayList<HealthPack>();
@@ -170,7 +188,7 @@ void drawStartScreen() {
   textSize(20);
   text("Arrow keys: push the world (ship stays in the centre)", width / 2, height / 2 - 10);
   text("SPACE: fire lasers", width / 2, height / 2 + 24);
-  text("You have 3 lives", width / 2, height / 2 + 58);
+  text("3 lives — level rises with your score", width / 2, height / 2 + 58);
 
   textSize(22);
   fill(180);
@@ -224,7 +242,7 @@ void drawPlaying() {
   drawHud(player, scores);
 }
 
-// Higher score → shorter spawn interval (difficulty curve)
+// Higher level → shorter spawn interval
 void updateAlienSpawning() {
   framesUntilSpawn--;
   if (framesUntilSpawn > 0) return;
@@ -233,17 +251,17 @@ void updateAlienSpawning() {
 
   int spawnMin = SPAWN_INTERVAL_MIN;
   int spawnMax = SPAWN_INTERVAL_MAX;
-  int scoreNow = scores.getCurrentScore();
+  int level = scores.getLevel();
 
-  if (scoreNow > 50) {
+  if (level >= 2) {
     spawnMin = 35;
     spawnMax = 80;
   }
-  if (scoreNow > 100) {
+  if (level >= 3) {
     spawnMin = 25;
     spawnMax = 60;
   }
-  if (scoreNow > 200) {
+  if (level >= 4) {
     spawnMin = 18;
     spawnMax = 45;
   }
@@ -302,7 +320,7 @@ void updateBullets(ArrayList<Bullet> bulletList, ArrayList<Obstacle> alienList) 
       if (alien.isDead()) continue;
 
       if (b.hits(alien)) {
-        effects.add(new Explosion(alien.x, alien.y));
+        effects.add(new Explosion(alien.x, alien.y, explosionFrames));
         scores.addBonus(10);
         showHitMessage("Score +10", 255, 220, 80, 45);
         alien.markDead();
@@ -369,6 +387,8 @@ void drawHud(Player p, ScoreManager s) {
   textAlign(LEFT, TOP);
   text("Lives: " + p.getLives(), 20, 20);
   text("Score: " + s.getCurrentScore(), 20, 44);
+  text("Level: " + s.getLevel(), 20, 68);
+  text("High: " + s.getHighScore(), 20, 92);
   textAlign(CENTER, CENTER);
 
   if (hitMessageFrames > 0) {
@@ -422,18 +442,25 @@ void handleHealthPickups(ArrayList<HealthPack> list) {
 }
 
 void spawnAlienAtEdge() {
-  if (aliens.size() >= MAX_ALIENS) return;
+  int maxAliens = MAX_ALIENS;
+  if (scores.getLevel() >= 3) {
+    maxAliens = MAX_ALIENS + 2;
+  }
+  if (aliens.size() >= maxAliens) return;
 
   float sz = random(28, 42);
   float roll = random(1);
   Obstacle alien;
+  float speedBoost = 1.0 + (scores.getLevel() - 1) * 0.15;
 
   if (roll < 0.35) {
     alien = new FastObstacle(0, 0, sz * 0.9, imgAlienOrange);
   } else if (roll < 0.65) {
     alien = new MovingObstacle(0, 0, sz, imgAlienPurple);
   } else {
-    alien = new Obstacle(0, 0, sz, random(1.6, 3.0), color(120, 220, 120), imgAlienGreen);
+    alien = new Obstacle(0, 0, sz, random(1.6, 3.0) * speedBoost,
+                         color(120, 220, 120), imgAlienGreen);
+    alien.setAnimFrames(alienAnimFrames);
   }
 
   alien.respawnAtEdge();
@@ -452,7 +479,7 @@ void handlePlayerAlienCollisions(ArrayList<Obstacle> list) {
     showHitMessage("-1 Life  (" + player.getLives() + "/3)", 255, 90, 90, 80);
     println(hitMessage);
 
-    effects.add(new Explosion(alien.x, alien.y));
+    effects.add(new Explosion(alien.x, alien.y, explosionFrames));
     alien.markDead();
 
     if (player.getLives() <= 0) {
@@ -514,6 +541,7 @@ void restartGame() {
   fireCooldown = 0;
 
   Obstacle a1 = new Obstacle(180, 140, 36, 2.2, color(120, 220, 120), imgAlienGreen);
+  a1.setAnimFrames(alienAnimFrames);
   a1.placeOnScreen(180, 140);
   aliens.add(a1);
 

@@ -1,6 +1,6 @@
 /**
  * Obstacle.pde — Base alien enemy.
- * Moves with random vx/vy, can be marked dead, then removed by the main loop.
+ * Supports a PImage animation sequence; marked dead then removed by the main loop.
  */
 class Obstacle extends WorldObject {
   float speed;
@@ -8,6 +8,10 @@ class Obstacle extends WorldObject {
   float vy;
   color bodyColor;
   PImage img;
+  PImage[] animFrames;
+  int animIndex;
+  int animTimer;
+  final int ANIM_HOLD = 8;
 
   int framesUntilTurn;
   float drawSize;
@@ -22,9 +26,19 @@ class Obstacle extends WorldObject {
     speed = moveSpeed;
     bodyColor = c;
     img = sprite;
+    animFrames = null;
+    animIndex = 0;
+    animTimer = 0;
     drawSize = obstacleSize;
     dead = false;
     pickNewVelocity();
+  }
+
+  // Optional PImage sequence for 70–80% animation criterion
+  void setAnimFrames(PImage[] frames) {
+    animFrames = frames;
+    animIndex = 0;
+    animTimer = 0;
   }
 
   void markDead() {
@@ -39,7 +53,6 @@ class Obstacle extends WorldObject {
     framesUntilTurn = int(random(30, 120));
     vx = random(-speed, speed);
     vy = random(-speed, speed);
-    // Avoid nearly-stopped aliens
     if (vx > -0.3 && vx < 0.3) {
       if (random(1) < 0.5) vx = speed;
       else vx = -speed;
@@ -50,7 +63,6 @@ class Obstacle extends WorldObject {
     }
   }
 
-  // Steer gently toward the player using comparisons only
   void nudgeTowardCenter() {
     float cx = width / 2.0;
     float cy = height / 2.0;
@@ -73,10 +85,19 @@ class Obstacle extends WorldObject {
     x = x + vx;
     y = y + vy;
 
-    if ((frameCount / 10) % 2 == 0) {
+    if (animFrames != null && animFrames.length > 0) {
+      animTimer++;
+      if (animTimer >= ANIM_HOLD) {
+        animTimer = 0;
+        animIndex = (animIndex + 1) % animFrames.length;
+      }
       drawSize = size;
     } else {
-      drawSize = size * 1.08;
+      if ((frameCount / 10) % 2 == 0) {
+        drawSize = size;
+      } else {
+        drawSize = size * 1.08;
+      }
     }
   }
 
@@ -116,7 +137,10 @@ class Obstacle extends WorldObject {
   }
 
   void display() {
-    if (img != null) {
+    if (animFrames != null && animFrames.length > 0 &&
+        animFrames[animIndex] != null) {
+      image(animFrames[animIndex], x - drawSize / 2, y - drawSize / 2, drawSize, drawSize);
+    } else if (img != null) {
       image(img, x - drawSize / 2, y - drawSize / 2, drawSize, drawSize);
     } else {
       noStroke();
