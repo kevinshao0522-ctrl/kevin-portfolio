@@ -36,7 +36,10 @@ PImage imgShipLeft;
 PImage imgShipRight;
 PImage[] explosionFrames;
 PImage[] alienAnimFrames;
-PImage[] flameFrames;
+PImage[] flameDownFrames;
+PImage[] flameUpFrames;
+PImage[] flameLeftFrames;
+PImage[] flameRightFrames;
 
 int framesUntilSpawn = 0;
 final int SPAWN_INTERVAL_MIN = 45;
@@ -88,13 +91,20 @@ void setup() {
   for (int i = 0; i < alienAnimFrames.length; i++) {
     alienAnimFrames[i] = loadImage("alien_anim_" + i + ".png");
   }
-  flameFrames = new PImage[4];
-  for (int i = 0; i < flameFrames.length; i++) {
-    flameFrames[i] = loadImage("flame_" + i + ".png");
+  // Directional exhaust: flame always shoots out of the rear
+  flameDownFrames = new PImage[4];
+  flameUpFrames = new PImage[4];
+  flameLeftFrames = new PImage[4];
+  flameRightFrames = new PImage[4];
+  for (int i = 0; i < 4; i++) {
+    flameDownFrames[i] = loadImage("flame_down_" + i + ".png");
+    flameUpFrames[i] = loadImage("flame_up_" + i + ".png");
+    flameLeftFrames[i] = loadImage("flame_left_" + i + ".png");
+    flameRightFrames[i] = loadImage("flame_right_" + i + ".png");
   }
 
   player = new Player(imgShipUp, imgShipDown, imgShipLeft, imgShipRight);
-  player.setFlameFrames(flameFrames);
+  player.setFlameFrames(flameDownFrames, flameUpFrames, flameLeftFrames, flameRightFrames);
   scores = new ScoreManager();
   aliens = new ArrayList<Obstacle>();
   healthPacks = new ArrayList<HealthPack>();
