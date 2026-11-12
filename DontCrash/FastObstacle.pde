@@ -1,6 +1,6 @@
 /**
- * FastObstacle — faster alien, stronger centre pull, occasional dash.
- * Uses vx/vy only (no trig / noise / map).
+ * FastObstacle.pde — Fast alien subclass with stronger centre pull and dashes.
+ * Extends Obstacle; overrides update/display for aggression and a speed streak.
  */
 class FastObstacle extends Obstacle {
   int dashCooldown;
@@ -12,7 +12,6 @@ class FastObstacle extends Obstacle {
 
   @Override
   void update() {
-    // Stronger / more frequent centre pull
     if (random(1) < 0.08) {
       float cx = width / 2.0;
       float cy = height / 2.0;
@@ -24,7 +23,7 @@ class FastObstacle extends Obstacle {
 
     dashCooldown--;
     if (dashCooldown <= 0) {
-      // Burst: double current components
+      // Short burst: double current velocity
       vx = vx * 2;
       vy = vy * 2;
       dashCooldown = int(random(50, 120));
@@ -34,7 +33,6 @@ class FastObstacle extends Obstacle {
     framesUntilTurn--;
     if (framesUntilTurn <= 0) {
       pickNewVelocity();
-      // Keep generally fast
       if (vx < 0 && vx > -speed) vx = -speed;
       if (vx > 0 && vx < speed) vx = speed;
       if (vy < 0 && vy > -speed) vy = -speed;
@@ -53,7 +51,6 @@ class FastObstacle extends Obstacle {
 
   @Override
   void display() {
-    // Speed streak without matrix transforms
     noStroke();
     fill(255, 200, 80);
     ellipse(x - vx * 2, y - vy * 2, drawSize * 0.7, drawSize * 0.5);

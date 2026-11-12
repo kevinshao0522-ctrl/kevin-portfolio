@@ -1,6 +1,6 @@
 /**
- * MovingObstacle — zig-zag by flipping a side offset on vx/vy.
- * No trig / matrix.
+ * MovingObstacle.pde — Zig-zag alien subclass.
+ * Adds a flipping side offset to the base velocity for a weaving path.
  */
 class MovingObstacle extends Obstacle {
   float sideStep;
@@ -14,7 +14,6 @@ class MovingObstacle extends Obstacle {
 
   @Override
   void update() {
-    // Soft pull toward centre with comparisons
     float cx = width / 2.0;
     float cy = height / 2.0;
     if (x < cx) vx = vx + 0.05;
@@ -22,7 +21,7 @@ class MovingObstacle extends Obstacle {
     if (y < cy) vy = vy + 0.05;
     if (y > cy) vy = vy - 0.05;
 
-    // Zig-zag: alternate adding sideStep to x then y path
+    // Alternate lateral offset to create a zig-zag
     zigTimer++;
     float extraX = 0;
     float extraY = 0;
@@ -44,11 +43,9 @@ class MovingObstacle extends Obstacle {
 
   @Override
   void display() {
-    // Purple ring drawn as a larger ellipse outline approximation (filled ring band)
     noStroke();
     fill(220, 120, 255);
     ellipse(x, y, drawSize * 1.15, drawSize * 1.15);
-    // Cover centre so ring look remains when sprite draws on top
     super.display();
   }
 }

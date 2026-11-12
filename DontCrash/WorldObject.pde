@@ -1,8 +1,6 @@
 /**
- * WorldObject — abstract base for things that live in world space.
- *
- * Holds shared position/size helpers. Concrete subclasses:
- * Obstacle, HealthPack, Explosion, ...
+ * WorldObject.pde — Abstract base for objects that exist in world space.
+ * Stores position/size and shared helpers used by aliens, pickups, bullets, VFX.
  */
 abstract class WorldObject implements GameEntity {
   float x;
@@ -20,18 +18,17 @@ abstract class WorldObject implements GameEntity {
     y += dy;
   }
 
+  // Extra margin so edge-spawned aliens are not removed immediately
   boolean isOffScreen() {
     float margin = size + 120;
     return (x < -margin || x > width + margin ||
             y < -margin || y > height + margin);
   }
 
-  /** Default: stay alive until a subclass says otherwise. */
   boolean isFinished() {
     return false;
   }
 
-  // Subclasses must implement update() and display()
   abstract void update();
   abstract void display();
 }

@@ -1,7 +1,6 @@
 /**
- * Player — spaceship fixed at screen centre.
- * Facing uses four discrete directions.
- * Visual flip = swap among 4 pre-made sprites (no runtime rotate).
+ * Player.pde — Player spaceship fixed at the screen centre.
+ * Facing uses four pre-made sprites; lives are private with getter helpers.
  */
 class Player implements GameEntity {
   final int DIR_UP = 0;
@@ -53,7 +52,6 @@ class Player implements GameEntity {
     }
   }
 
-  /** Reset lives, facing, and animation for a new run. */
   void resetForNewRun() {
     lives = 3;
     facing = DIR_UP;
@@ -61,10 +59,7 @@ class Player implements GameEntity {
     animTimer = 0;
   }
 
-  /**
-   * Point the ship exactly toward one cardinal direction.
-   * Called when an arrow is pressed, and when holds are re-synced.
-   */
+  // Point the nose toward one cardinal direction from key input
   void setFacingFromKey(int dir) {
     if (dir == DIR_UP || dir == DIR_RIGHT || dir == DIR_DOWN || dir == DIR_LEFT) {
       facing = dir;
@@ -87,7 +82,7 @@ class Player implements GameEntity {
 
   boolean heal(int amount) {
     if (lives >= 3) return false;
-    // Cap lives at 3 with if/else (no min/max)
+    // Cap at 3 lives with if/else
     if (lives + amount > 3) {
       lives = 3;
     } else {
@@ -147,6 +142,7 @@ class Player implements GameEntity {
   }
 
   void display() {
+    // Engine flame opposite the nose
     float flameLen = 12 + animFrame * 6;
     noStroke();
     fill(255, 160, 40);
@@ -178,6 +174,7 @@ class Player implements GameEntity {
       }
       image(spr, x - drawW / 2, y - drawH / 2, drawW, drawH);
     } else {
+      // Fallback triangle if sprites fail to load
       fill(180, 210, 255);
       if (facing == DIR_UP) {
         triangle(x, y - bodySize * 0.7,

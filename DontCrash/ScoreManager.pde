@@ -1,12 +1,10 @@
 /**
- * ScoreManager — current score + high score in memory only.
- * (No file I/O — syllabus-safe version)
+ * ScoreManager.pde — Tracks current score and in-memory high score.
+ * Survival points tick over time; bonuses come from hits and heals.
  */
 class ScoreManager {
   private int currentScore;
   private int highScore;
-
-  // Award 1 point about every 60 frames (~1 second)
   private int frameCounter;
 
   ScoreManager() {
@@ -23,7 +21,6 @@ class ScoreManager {
     return highScore;
   }
 
-  /** Keep the best score of this program run in memory. */
   void saveHighScore() {
     if (currentScore > highScore) {
       highScore = currentScore;
@@ -36,6 +33,7 @@ class ScoreManager {
     frameCounter = 0;
   }
 
+  // About +1 score per second while playing
   void updateSurvivalScore() {
     frameCounter++;
     if (frameCounter >= 60) {

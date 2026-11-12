@@ -1,13 +1,9 @@
 /**
- * Don't Crash!! — Star Wars theme (Scheme A)
- *
- * Syllabus-safe rewrite:
- * - No trig / matrix / noise / file I/O
- * - if/else states, key hold flags, discrete facing
- * - dead marks + end-of-loop remove; helpers for update/HUD
+ * DontCrash.pde — Main sketch for Don't Crash!!
+ * Owns game states, input, spawning, collisions, HUD, and list cleanup.
+ * Scheme A: ship stays centred; arrow keys push the world the other way.
  */
 
-// ---------- Game states ----------
 final int STATE_START = 0;
 final int STATE_PLAYING = 1;
 final int STATE_GAME_OVER = 2;
@@ -44,13 +40,11 @@ final int SPAWN_INTERVAL_MIN = 45;
 final int SPAWN_INTERVAL_MAX = 100;
 final int MAX_ALIENS = 12;
 
-// Hold flags — updated in keyPressed / keyReleased for instant response
 boolean holdLeft = false;
 boolean holdRight = false;
 boolean holdUp = false;
 boolean holdDown = false;
 boolean holdSpace = false;
-// Last arrow keyCode pressed; used so ship points exactly where you pressed
 int lastArrowKey = UP;
 float pushSpeed = 6.0;
 
@@ -76,7 +70,7 @@ void setup() {
   imgAlienGreen = loadImage("alien_green.png");
   imgAlienPurple = loadImage("alien_purple.png");
   imgAlienOrange = loadImage("alien_orange.png");
-  // Four facing sprites (pre-rotated offline — no rotate() in game code)
+  // Four facing sprites prepared offline (no rotate() at runtime)
   imgShipUp = loadImage("player_ship_up.png");
   imgShipDown = loadImage("player_ship_down.png");
   imgShipLeft = loadImage("player_ship_left.png");
@@ -92,7 +86,7 @@ void setup() {
 }
 
 void draw() {
-  // Solid background colour changes for flash feedback (no alpha fill)
+  // Solid flash backgrounds (no alpha fill)
   if (gameState == STATE_PLAYING && healFlashFrames > 0) {
     background(30, 140, 70);
   } else if (gameState == STATE_PLAYING && crashFlashFrames > 0) {
@@ -138,10 +132,7 @@ void shiftStarfield(float dx, float dy) {
   }
 }
 
-/**
- * Use hold flags so direction changes immediately when a key goes down,
- * and stops immediately when released (no OS key-repeat delay).
- */
+// Push the whole world opposite to the held arrow keys
 void applyArrowPush() {
   float dx = 0;
   float dy = 0;
@@ -151,7 +142,6 @@ void applyArrowPush() {
   if (holdUp)    dy = dy + pushSpeed;
   if (holdDown)  dy = dy - pushSpeed;
 
-  // Keep nose locked to the arrow you are pressing / last pressed among held keys
   syncShipFacingToKeys();
 
   if (dx == 0 && dy == 0) return;
@@ -202,7 +192,6 @@ void drawPlaying() {
   if (fireCooldown > 0) {
     fireCooldown = fireCooldown - 1;
   }
-  // Hold SPACE for continuous fire (cooldown still applies)
   if (holdSpace) {
     tryFireBullet();
   }
@@ -219,7 +208,7 @@ void drawPlaying() {
     handlePlayerAlienCollisions(aliens);
   }
 
-  // Uniform cleanup after all mark-finished decisions
+  // Mark first, remove once at the end of the frame
   removeDeadAliens(aliens);
   removeFinishedBullets(bullets);
   removeFinishedHealthPacks(healthPacks);
@@ -235,7 +224,7 @@ void drawPlaying() {
   drawHud(player, scores);
 }
 
-/** Shrink spawn window as score rises (if + random only). */
+// Higher score → shorter spawn interval (difficulty curve)
 void updateAlienSpawning() {
   framesUntilSpawn--;
   if (framesUntilSpawn > 0) return;
@@ -300,10 +289,7 @@ void updateEffects(ArrayList<GameEntity> list) {
   }
 }
 
-/**
- * Update bullets and mark hits. Do not remove mid-loop —
- * dead aliens / finished bullets are cleared later.
- */
+// Hit detection only marks entities; removal happens later
 void updateBullets(ArrayList<Bullet> bulletList, ArrayList<Obstacle> alienList) {
   for (int i = 0; i < bulletList.size(); i++) {
     Bullet b = bulletList.get(i);
@@ -406,6 +392,7 @@ void spawnHealthPack() {
   float px = random(80, width - 80);
   float py = random(80, height - 80);
 
+  // Keep pickups away from the ship spawn point
   int tries = 0;
   while (dist(px, py, width / 2.0, height / 2.0) < 180 && tries < 30) {
     px = random(80, width - 80);
@@ -453,7 +440,6 @@ void spawnAlienAtEdge() {
   aliens.add(alien);
 }
 
-/** Mark crashed alien dead; removal happens in removeDeadAliens. */
 void handlePlayerAlienCollisions(ArrayList<Obstacle> list) {
   for (int i = 0; i < list.size(); i++) {
     Obstacle alien = list.get(i);
@@ -484,7 +470,7 @@ void endRun() {
           " high=" + scores.getHighScore());
 }
 
-/** End screen: starfield + text only (no entities / no full-screen cover). */
+// Starfield + result text only
 void drawGameOver() {
   drawStarfield();
 
@@ -557,12 +543,7 @@ void tryFireBullet() {
   fireCooldown = FIRE_COOLDOWN_FRAMES;
 }
 
-/**
- * Map held arrow keys to ship facing.
- * Prefer the most recently pressed arrow if it is still held;
- * otherwise fall back to whichever arrow is still down.
- * Result: press Left → nose Left; press Up → nose Up; etc.
- */
+// Prefer the most recently pressed arrow that is still held
 void syncShipFacingToKeys() {
   if (lastArrowKey == LEFT && holdLeft) {
     player.setFacingFromKey(player.DIR_LEFT);
@@ -581,7 +562,6 @@ void syncShipFacingToKeys() {
     return;
   }
 
-  // Last pressed key was released; retarget to a remaining hold
   if (holdLeft) {
     lastArrowKey = LEFT;
     player.setFacingFromKey(player.DIR_LEFT);
@@ -595,7 +575,6 @@ void syncShipFacingToKeys() {
     lastArrowKey = DOWN;
     player.setFacingFromKey(player.DIR_DOWN);
   }
-  // If nothing held, keep previous facing (good for firing)
 }
 
 void keyPressed() {
@@ -607,7 +586,6 @@ void keyPressed() {
 
   if (gameState != STATE_PLAYING) return;
 
-  // Press which arrow → face that way immediately
   if (keyCode == LEFT) {
     holdLeft = true;
     lastArrowKey = LEFT;
@@ -639,7 +617,6 @@ void keyReleased() {
   if (key == ' ') {
     holdSpace = false;
   }
-  // If one arrow released while another is held, face the remaining key
   syncShipFacingToKeys();
 }
 

@@ -1,5 +1,6 @@
 /**
- * Bullet — circular laser pulse with fixed vx/vy (no cos/sin/rotate).
+ * Bullet.pde — Circular laser shot fired by the player.
+ * Travels with fixed vx/vy along the ship's facing direction.
  */
 class Bullet extends WorldObject {
   float vx;
@@ -20,13 +21,10 @@ class Bullet extends WorldObject {
 
   void display() {
     noStroke();
-    // Outer glow ring
     fill(40, 160, 255);
     ellipse(x, y, size * 1.6, size * 1.6);
-    // Mid laser disc
     fill(80, 210, 255);
     ellipse(x, y, size * 1.15, size * 1.15);
-    // Bright core
     fill(220, 250, 255);
     ellipse(x, y, size * 0.55, size * 0.55);
   }

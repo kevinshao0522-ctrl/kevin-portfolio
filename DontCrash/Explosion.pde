@@ -1,12 +1,11 @@
 /**
- * Explosion — short VFX using fixed offset arrays (no cos/sin).
- * Game continues while this plays.
+ * Explosion.pde — Short crash / hit visual effect.
+ * Uses fixed spark offsets (no trig); gameplay continues while it plays.
  */
 class Explosion extends WorldObject {
   int life;
   final int MAX_LIFE = 36;
 
-  // Prefixed spark directions as raw dx/dy (no angles)
   float[] sparkDx;
   float[] sparkDy;
   float[] sparkDist;
@@ -15,6 +14,7 @@ class Explosion extends WorldObject {
     super(cx, cy, 40);
     life = MAX_LIFE;
 
+    // Predefined spark directions instead of angles
     sparkDx = new float[] { 1, -1, 0, 0, 1, -1, 1, -1, 0.5, -0.5 };
     sparkDy = new float[] { 0, 0, 1, -1, 1, -1, -1, 1, 0.5, -0.5 };
     sparkDist = new float[10];
@@ -35,7 +35,6 @@ class Explosion extends WorldObject {
     float radius = size * (0.4 + t * 2.2);
 
     noStroke();
-    // Expanding rings as filled ellipses (no strokeWeight / alpha)
     fill(255, 200, 80);
     ellipse(x, y, radius, radius);
     fill(255, 100, 40);

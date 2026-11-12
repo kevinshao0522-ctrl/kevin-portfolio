@@ -1,6 +1,6 @@
 /**
- * Obstacle — base alien class.
- * Moves with vx/vy only (no cos/sin/atan2/noise).
+ * Obstacle.pde — Base alien enemy.
+ * Moves with random vx/vy, can be marked dead, then removed by the main loop.
  */
 class Obstacle extends WorldObject {
   float speed;
@@ -10,8 +10,8 @@ class Obstacle extends WorldObject {
   PImage img;
 
   int framesUntilTurn;
-  float drawSize;   // pulse by changing this, not scale()
-  private boolean dead;     // mark first; main loop removes later
+  float drawSize;
+  private boolean dead;
 
   Obstacle(float startX, float startY, float obstacleSize, float moveSpeed, color c) {
     this(startX, startY, obstacleSize, moveSpeed, c, null);
@@ -35,13 +35,11 @@ class Obstacle extends WorldObject {
     return dead;
   }
 
-  /** Pick a random velocity using only random() on vx/vy. */
   void pickNewVelocity() {
     framesUntilTurn = int(random(30, 120));
-    // Four-ish free directions via random components
     vx = random(-speed, speed);
     vy = random(-speed, speed);
-    // Avoid almost-zero motion
+    // Avoid nearly-stopped aliens
     if (vx > -0.3 && vx < 0.3) {
       if (random(1) < 0.5) vx = speed;
       else vx = -speed;
@@ -52,7 +50,7 @@ class Obstacle extends WorldObject {
     }
   }
 
-  /** Softly pull toward centre using comparisons (no atan2). */
+  // Steer gently toward the player using comparisons only
   void nudgeTowardCenter() {
     float cx = width / 2.0;
     float cy = height / 2.0;
@@ -75,7 +73,6 @@ class Obstacle extends WorldObject {
     x = x + vx;
     y = y + vy;
 
-    // Pulse size with a simple frame toggle (no sin/scale)
     if ((frameCount / 10) % 2 == 0) {
       drawSize = size;
     } else {
@@ -120,7 +117,6 @@ class Obstacle extends WorldObject {
 
   void display() {
     if (img != null) {
-      // Default imageMode CORNER: convert centre to top-left
       image(img, x - drawSize / 2, y - drawSize / 2, drawSize, drawSize);
     } else {
       noStroke();
@@ -136,7 +132,6 @@ class Obstacle extends WorldObject {
   }
 
   float getCollisionRadius() {
-    // Match the smaller drawn body (tight hitbox)
     return size * 0.35;
   }
 
