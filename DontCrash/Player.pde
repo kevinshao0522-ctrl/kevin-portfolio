@@ -62,13 +62,17 @@ class Player implements GameEntity {
   }
 
   /**
-   * Set facing from the most recently pressed arrow key
-   * (call from keyPressed, not from a hold-flag if-chain).
+   * Point the ship exactly toward one cardinal direction.
+   * Called when an arrow is pressed, and when holds are re-synced.
    */
   void setFacingFromKey(int dir) {
     if (dir == DIR_UP || dir == DIR_RIGHT || dir == DIR_DOWN || dir == DIR_LEFT) {
       facing = dir;
     }
+  }
+
+  int getFacing() {
+    return facing;
   }
 
   float getCollisionRadius() {

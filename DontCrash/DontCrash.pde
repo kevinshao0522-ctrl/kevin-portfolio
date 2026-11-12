@@ -50,6 +50,8 @@ boolean holdRight = false;
 boolean holdUp = false;
 boolean holdDown = false;
 boolean holdSpace = false;
+// Last arrow keyCode pressed; used so ship points exactly where you pressed
+int lastArrowKey = UP;
 float pushSpeed = 6.0;
 
 int invulnFrames = 0;
@@ -149,7 +151,8 @@ void applyArrowPush() {
   if (holdUp)    dy = dy + pushSpeed;
   if (holdDown)  dy = dy - pushSpeed;
 
-  // Facing is set in keyPressed (last pressed arrow), not here
+  // Keep nose locked to the arrow you are pressing / last pressed among held keys
+  syncShipFacingToKeys();
 
   if (dx == 0 && dy == 0) return;
 
@@ -554,6 +557,47 @@ void tryFireBullet() {
   fireCooldown = FIRE_COOLDOWN_FRAMES;
 }
 
+/**
+ * Map held arrow keys to ship facing.
+ * Prefer the most recently pressed arrow if it is still held;
+ * otherwise fall back to whichever arrow is still down.
+ * Result: press Left → nose Left; press Up → nose Up; etc.
+ */
+void syncShipFacingToKeys() {
+  if (lastArrowKey == LEFT && holdLeft) {
+    player.setFacingFromKey(player.DIR_LEFT);
+    return;
+  }
+  if (lastArrowKey == RIGHT && holdRight) {
+    player.setFacingFromKey(player.DIR_RIGHT);
+    return;
+  }
+  if (lastArrowKey == UP && holdUp) {
+    player.setFacingFromKey(player.DIR_UP);
+    return;
+  }
+  if (lastArrowKey == DOWN && holdDown) {
+    player.setFacingFromKey(player.DIR_DOWN);
+    return;
+  }
+
+  // Last pressed key was released; retarget to a remaining hold
+  if (holdLeft) {
+    lastArrowKey = LEFT;
+    player.setFacingFromKey(player.DIR_LEFT);
+  } else if (holdRight) {
+    lastArrowKey = RIGHT;
+    player.setFacingFromKey(player.DIR_RIGHT);
+  } else if (holdUp) {
+    lastArrowKey = UP;
+    player.setFacingFromKey(player.DIR_UP);
+  } else if (holdDown) {
+    lastArrowKey = DOWN;
+    player.setFacingFromKey(player.DIR_DOWN);
+  }
+  // If nothing held, keep previous facing (good for firing)
+}
+
 void keyPressed() {
   if ((gameState == STATE_START || gameState == STATE_GAME_OVER) &&
       (key == ENTER || key == RETURN)) {
@@ -563,21 +607,22 @@ void keyPressed() {
 
   if (gameState != STATE_PLAYING) return;
 
-  // Record the last pressed arrow as facing (true last-key wins)
+  // Press which arrow → face that way immediately
   if (keyCode == LEFT) {
     holdLeft = true;
+    lastArrowKey = LEFT;
     player.setFacingFromKey(player.DIR_LEFT);
-  }
-  if (keyCode == RIGHT) {
+  } else if (keyCode == RIGHT) {
     holdRight = true;
+    lastArrowKey = RIGHT;
     player.setFacingFromKey(player.DIR_RIGHT);
-  }
-  if (keyCode == UP) {
+  } else if (keyCode == UP) {
     holdUp = true;
+    lastArrowKey = UP;
     player.setFacingFromKey(player.DIR_UP);
-  }
-  if (keyCode == DOWN) {
+  } else if (keyCode == DOWN) {
     holdDown = true;
+    lastArrowKey = DOWN;
     player.setFacingFromKey(player.DIR_DOWN);
   }
 
@@ -594,6 +639,8 @@ void keyReleased() {
   if (key == ' ') {
     holdSpace = false;
   }
+  // If one arrow released while another is held, face the remaining key
+  syncShipFacingToKeys();
 }
 
 void clearHoldKeys() {
@@ -602,4 +649,5 @@ void clearHoldKeys() {
   holdUp = false;
   holdDown = false;
   holdSpace = false;
+  lastArrowKey = UP;
 }
